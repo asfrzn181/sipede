@@ -1,6 +1,8 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    RewriteRule ^(?:application|system|vendor|database|tests)(?:/|$) - [F,L,NC]
+
     # Cegah loop jika mengakses folder langsung
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

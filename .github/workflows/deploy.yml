@@ -41,7 +41,12 @@ jobs:
             **/.git*/**
             **/.github/**
             **/tests/**
+            database/**
+            **/*.sql
+            **/*.txt
+            **/application/logs/**
             .env
             .env.example
             README.md
             rbac_tambahan_sql.txt
+

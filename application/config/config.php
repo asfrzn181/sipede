@@ -1,12 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ? 'https://' : 'http://';
-if (!empty($_SERVER['HTTP_HOST'])) {
-    $scriptDir = str_replace(basename($_SERVER['SCRIPT_NAME'] ?? ''), '', $_SERVER['SCRIPT_NAME'] ?? '');
-    $config['base_url'] = $protocol . $_SERVER['HTTP_HOST'] . $scriptDir;
-} else {
-    $config['base_url'] = 'http://localhost/sipede/';
-}
-$config['index_page'] = '';
+$config['base_url'] = getenv('APP_BASE_URL') ?: 'http://localhost/sipede/';
+$config['index_page'] = getenv('APP_INDEX_PAGE') !== false ? (string)getenv('APP_INDEX_PAGE') : 'index.php';
 $config['enable_query_strings'] = FALSE;
 $config['controller_trigger'] = 'c';
 $config['function_trigger'] = 'm';
@@ -28,7 +22,7 @@ $config['csrf_expire'] = 7200;
 $config['csrf_regenerate'] = FALSE;
 $config['cookie_path'] = '/';
 $config['cookie_domain'] = '';
-$config['cookie_secure'] = FALSE;
+$config['cookie_secure'] = (getenv('APP_COOKIE_SECURE') ?: '0') === '1';
 $config['cookie_httponly'] = FALSE;
 $config['csrf_exclude_uris'] = array('auth/login');
 $config['global_xss_filtering'] = TRUE;
