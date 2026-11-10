@@ -1,0 +1,71 @@
+<?php defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Penerima_model extends CI_Model {
+    public function all(): array {
+        return $this->db->order_by('tipe')->order_by('nama')->get('penerima')->result_array();
+    }
+
+    public function all_by_tipe(string $tipe): array {
+        return $this->db->where('tipe', $tipe)->where('is_active', 1)
+            ->order_by('nama')->get('penerima')->result_array();
+    }
+
+    public function with_budget_source(int $year): array {
+        return $this->db
+            ->select('p.*,a.sumber_dana_id,sd.kode sumber_dana_kode,sd.nama sumber_dana_nama')
+            ->from('penerima p')
+            ->join('anggaran a','a.penerima_id=p.id AND a.tahun_anggaran_id='.(int)$year,'left')
+            ->join('sumber_dana sd','sd.id=a.sumber_dana_id','left')
+            ->where('p.is_active',1)
+            ->order_by('p.tipe')
+            ->order_by('p.nama')
+            ->get()->result_array();
+    }
+
+    public function count_all(): int {
+        return (int)$this->db->count_all('penerima');
+    }
+
+    public function count_filtered(string $search = ''): int {
+        if ($search !== '') {
+            $this->db->group_start();
+            $this->db->like('nama', $search);
+            $this->db->or_like('tipe', $search);
+            $this->db->or_like('jabatan', $search);
+            $this->db->group_end();
+        }
+        return (int)$this->db->count_all_results('penerima');
+    }
+
+    public function get_datatable(int $start = 0, int $length = 10, string $search = '', string $orderCol = 'nama', string $orderDir = 'ASC'): array {
+        if ($search !== '') {
+            $this->db->group_start();
+            $this->db->like('nama', $search);
+            $this->db->or_like('tipe', $search);
+            $this->db->or_like('jabatan', $search);
+            $this->db->group_end();
+        }
+        if (!empty($orderCol)) {
+            $this->db->order_by($orderCol, $orderDir);
+        } else {
+            $this->db->order_by('tipe', 'ASC')->order_by('nama', 'ASC');
+        }
+        if ($length > 0) {
+            $this->db->limit($length, $start);
+        }
+        return $this->db->get('penerima')->result_array();
+    }
+
+    public function find(int $id): ?array {
+        return $this->db->get_where('penerima', array('id' => $id))->row_array() ?: NULL;
+    }
+
+    public function save(array $data, ?int $id = NULL): int {
+        if ($id) {
+            $this->db->where('id', $id)->update('penerima', $data);
+            return $id;
+        }
+        $this->db->insert('penerima', $data);
+        return (int)$this->db->insert_id();
+    }
+}

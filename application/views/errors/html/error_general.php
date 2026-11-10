@@ -1,0 +1,1 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title><?= html_escape($heading ?? 'Terjadi kesalahan') ?></title></head><body><h1><?= html_escape($heading ?? 'Terjadi kesalahan') ?></h1><p><?= html_escape($message ?? '') ?></p></body></html>

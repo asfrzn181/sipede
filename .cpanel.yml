@@ -1,0 +1,21 @@
+---
+deployment:
+  tasks:
+    # --------------------------------------------------------------------------
+    # Konfigurasi Deployment cPanel Git™ Version Control
+    # Sesuaikan YOUR_CPANEL_USERNAME dengan username cPanel hosting Anda.
+    # Jika menggunakan domain utama: /home/YOUR_CPANEL_USERNAME/public_html/
+    # Jika menggunakan subdomain:    /home/YOUR_CPANEL_USERNAME/sipede.domain.com/
+    # --------------------------------------------------------------------------
+    - export DEPLOYPATH=/home/YOUR_CPANEL_USERNAME/public_html/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R application $DEPLOYPATH
+    - /bin/cp -R assets $DEPLOYPATH
+    - /bin/cp -R database $DEPLOYPATH
+    - /bin/cp -R uploads $DEPLOYPATH
+    - /bin/cp index.php $DEPLOYPATH
+    - /bin/cp .htaccess $DEPLOYPATH
+    - /bin/cp composer.json $DEPLOYPATH
+    - /bin/cp composer.lock $DEPLOYPATH
+    # Jalankan composer install jika cPanel menyediakan binary composer
+    - (which composer > /dev/null 2>&1 && cd $DEPLOYPATH && composer install --no-dev --prefer-dist --optimize-autoloader) || true
