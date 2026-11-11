@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <p class="text-muted mb-0">Kelola tahun anggaran dan status penguncian transaksi. Klik <strong>Detail</strong> untuk mengatur pagu per penerima.</p>
+  <p class="text-muted mb-0">Kelola tahun anggaran dan status penguncian transaksi. Gunakan tombol <strong>Pos Anggaran</strong> untuk mengatur pagu sesuai tahun.</p>
   <?php if($can_manage): ?>
   <button class="btn btn-primary d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#dataModal">
     <i class="bi bi-plus-lg"></i>

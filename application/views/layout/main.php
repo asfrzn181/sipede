@@ -114,11 +114,6 @@
           <i class="bi bi-calendar3"></i>
           <span class="menu-title">Tahun Anggaran</span>
         </a>
-        <a class="nav-link <?= ($cClass === 'pos') ? 'active' : '' ?>" href="<?= site_url('pos/index/' . encrypt_id($this->session->userdata('tahun_aktif_id'))) ?>">
-          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
-          <i class="bi bi-grid-3x3-gap"></i>
-          <span class="menu-title">Pos Anggaran</span>
-        </a>
         <?php endif; ?>
 
         <?php if(can('jenis_biaya.view')): ?>

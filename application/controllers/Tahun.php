@@ -55,7 +55,8 @@ class Tahun extends MY_Controller {
             $lockHtml = '<span class="badge text-bg-' . $badgeBg . '">' . $badgeText . '</span>';
 
             $aksiHtml = '<div class="text-end d-flex gap-2 justify-content-end">'
-                . '<a class="btn btn-sm btn-outline-primary" href="' . site_url('tahun/detail/' . $encId) . '"><i class="bi bi-eye me-1"></i>Detail Pagu</a>';
+                . '<a class="btn btn-sm btn-outline-primary" href="' . site_url('tahun/detail/' . $encId) . '"><i class="bi bi-eye me-1"></i>Detail Pagu</a>'
+                . '<a class="btn btn-sm btn-outline-info" href="' . site_url('pos/index/' . $encId) . '"><i class="bi bi-grid-3x3-gap me-1"></i>Pos Anggaran</a>';
             if ($canLock) {
                 $lockBtnText = $row['is_locked'] ? '<i class="bi bi-unlock"></i> Buka' : '<i class="bi bi-lock"></i> Kunci';
                 $aksiHtml .= '<button class="btn btn-sm btn-outline-secondary js-lock" data-id="' . $encId . '">' . $lockBtnText . '</button>';
