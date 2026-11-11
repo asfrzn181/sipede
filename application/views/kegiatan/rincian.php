@@ -101,7 +101,10 @@
       <i class="bi bi-file-earmark-text text-primary fs-5"></i>
       <span>Surat Tugas (Parent Data)</span>
     </div>
-    <code>#<?= html_escape($kegiatan['no_surat_tugas'] ?: 'DRAFT') ?></code>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge text-bg-primary">Tahun Anggaran <?= (int)($kegiatan['tahun_row']['tahun'] ?? 0) ?></span>
+      <code>#<?= html_escape($kegiatan['no_surat_tugas'] ?: 'DRAFT') ?></code>
+    </div>
   </div>
   <div class="card-body p-4">
     <div class="row g-3">
@@ -127,6 +130,10 @@
           <i class="bi bi-calendar-event me-1 text-primary"></i>
           <?= tgl_indo($kegiatan['tanggal_mulai']) ?> s/d <?= tgl_indo($kegiatan['tanggal_selesai']) ?>
         </span>
+      </div>
+      <div class="col-12 col-md-4">
+        <small class="text-muted d-block">Tahun Anggaran yang Digunakan</small>
+        <span class="fw-bold text-primary"><i class="bi bi-calendar3 me-1"></i><?= (int)($kegiatan['tahun_row']['tahun'] ?? 0) ?></span>
       </div>
     </div>
 

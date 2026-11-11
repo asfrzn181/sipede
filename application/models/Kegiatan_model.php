@@ -64,8 +64,9 @@ class Kegiatan_model extends CI_Model {
         string $orderCol = 'k.tanggal_mulai',
         string $orderDir = 'DESC'
     ): array {
-        $this->db->select('k.*, COUNT(DISTINCT kp.id) AS total_peserta, GROUP_CONCAT(DISTINCT p.nama ORDER BY p.tipe, p.nama SEPARATOR ", ") AS peserta', FALSE)
+        $this->db->select('k.*, ta.tahun AS tahun_anggaran, COUNT(DISTINCT kp.id) AS total_peserta, GROUP_CONCAT(DISTINCT p.nama ORDER BY p.tipe, p.nama SEPARATOR ", ") AS peserta', FALSE)
             ->from('kegiatan k')
+            ->join('tahun_anggaran ta', 'ta.id = k.tahun_anggaran_id', 'left')
             ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id', 'left')
             ->join('penerima p', 'p.id = kp.penerima_id', 'left');
 

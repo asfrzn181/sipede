@@ -1,7 +1,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
     <h1 class="h5 fw-bold text-dark mb-0">Daftar Kegiatan &amp; Surat Tugas</h1>
-    <p class="text-muted small mb-0">Kelola surat tugas perjalanan dinas, input peserta &amp; pendamping pada menu rincian kegiatan.</p>
+    <p class="text-muted small mb-0">Kelola kegiatan berdasarkan tahun anggaran, lalu input peserta dan pendamping pada rincian.</p>
   </div>
   <?php if($can_create): ?>
   <button class="btn btn-primary d-flex align-items-center gap-1 shadow-sm" id="btnSuratTugasBaru">
@@ -17,7 +17,16 @@
       <i class="bi bi-calendar2-event text-primary"></i>
       <span>Data Surat Tugas Perjalanan Dinas</span>
     </div>
-    <span class="badge text-bg-light border text-muted small">Klik tombol <strong>Rincian</strong> untuk mengelola peserta</span>
+    <div class="d-flex align-items-center gap-2">
+      <label for="filterTahunKegiatan" class="small text-muted mb-0">Tahun Anggaran</label>
+      <select class="form-select form-select-sm" id="filterTahunKegiatan" style="width: 150px;">
+        <?php foreach (($tahun_anggaran ?? array()) as $ta): ?>
+          <option value="<?= (int)$ta['id'] ?>" <?= (int)$ta['id'] === (int)$tahun_aktif_id ? 'selected' : '' ?>>
+            <?= (int)$ta['tahun'] ?><?= !empty($ta['is_locked']) ? ' (Terkunci)' : '' ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+    </div>
   </div>
   <div class="card-body p-3">
     <div class="table-responsive">
@@ -46,7 +55,7 @@
     <div class="modal-content">
       <form class="js-ajax-form" action="<?= site_url('kegiatan/save_header') ?>" id="formSuratTugas">
         <input type="hidden" name="id" id="headerIdInput">
-        <input type="hidden" name="tahun_anggaran_id" value="<?= (int)$this->session->userdata('tahun_aktif_id') ?>">
+        <input type="hidden" name="tahun_anggaran_id" id="headerTahunHidden" value="<?= (int)$tahun_aktif_id ?>">
 
         <div class="modal-header bg-light">
           <h5 class="modal-title fw-bold" id="modalHeaderTitle">
@@ -63,6 +72,17 @@
             <div class="col-12 col-md-6">
               <label class="form-label small fw-semibold">Tanggal Surat Tugas <span class="text-danger">*</span></label>
               <input class="form-control" type="date" name="tanggal_surat_tugas" id="inpTglSurat" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Tahun Anggaran <span class="text-danger">*</span></label>
+              <select class="form-select" id="inpTahunAnggaran" required>
+                <?php foreach (($tahun_anggaran ?? array()) as $ta): ?>
+                  <option value="<?= (int)$ta['id'] ?>" <?= (int)$ta['id'] === (int)$tahun_aktif_id ? 'selected' : '' ?> <?= !empty($ta['is_locked']) ? 'disabled' : '' ?>>
+                    <?= (int)$ta['tahun'] ?><?= !empty($ta['is_locked']) ? ' (Terkunci)' : '' ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <div class="form-text small">Tahun ini menjadi acuan pagu, pos anggaran, dan rincian biaya kegiatan.</div>
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label small fw-semibold">Tanggal Pelaksanaan Mulai <span class="text-danger">*</span></label>
@@ -107,7 +127,10 @@ $(function(){
   // Inisialisasi DataTable Server-Side
   var kegiatanDT = window.createDataTableServerSide('#kegiatanTable', {
     ajax: {
-      url: window.APP.baseUrl + 'kegiatan/data'
+      url: window.APP.baseUrl + 'kegiatan/data',
+      data: function(d){
+        d.tahun_anggaran_id = $('#filterTahunKegiatan').val();
+      }
     },
     order: [[2, 'desc']],
     columnDefs: [
@@ -117,10 +140,20 @@ $(function(){
     ]
   });
 
+  $('#filterTahunKegiatan').on('change', function(){
+    kegiatanDT.ajax.reload();
+  });
+
+  $('#inpTahunAnggaran').on('change', function(){
+    if (!$(this).prop('disabled')) $('#headerTahunHidden').val($(this).val());
+  });
+
   // Buka Modal Surat Tugas Baru
   $('#btnSuratTugasBaru').on('click', function(){
     $('#formSuratTugas')[0].reset();
     $('#headerIdInput').val('');
+    $('#inpTahunAnggaran').prop('disabled', false).val($('#filterTahunKegiatan').val() || '<?= (int)$tahun_aktif_id ?>');
+    $('#headerTahunHidden').val($('#inpTahunAnggaran').val());
     $('#inpTglSurat').val(new Date().toISOString().split('T')[0]);
     $('#modalHeaderTitle').html('<i class="bi bi-file-earmark-plus text-primary me-1"></i> Surat Tugas Baru (Parent Data)');
     bootstrap.Modal.getOrCreateInstance('#modalSuratTugas').show();
@@ -134,6 +167,8 @@ $(function(){
     }
     $('#formSuratTugas')[0].reset();
     $('#headerIdInput').val(r.id);
+    $('#inpTahunAnggaran').val(r.tahun_anggaran_id).prop('disabled', true);
+    $('#headerTahunHidden').val(r.tahun_anggaran_id);
     $('#inpNoSurat').val(r.no_surat_tugas);
     $('#inpTglSurat').val(r.tanggal_surat_tugas);
     $('#inpTglMulai').val(r.tanggal_mulai);

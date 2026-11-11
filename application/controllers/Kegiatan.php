@@ -14,7 +14,20 @@ class Kegiatan extends MY_Controller
      */
     public function index(): void {
         $this->require_any(array('kegiatan.view_all', 'kegiatan.view_own'));
-        $year  = (int)$this->session->userdata('tahun_aktif_id');
+        $tahunAnggaran = $this->db
+            ->order_by('tahun', 'DESC')
+            ->get('tahun_anggaran')
+            ->result_array();
+        $year = (int)$this->session->userdata('tahun_aktif_id');
+        $openYears = array_values(array_filter($tahunAnggaran, function($row) {
+            return empty($row['is_locked']);
+        }));
+        $openYearIds = array_map('intval', array_column($openYears, 'id'));
+        if (!$year || !in_array($year, $openYearIds, TRUE)) {
+            $year = !empty($openYears)
+                ? (int)$openYears[0]['id']
+                : (!empty($tahunAnggaran) ? (int)$tahunAnggaran[0]['id'] : 0);
+        }
 
         $this->load->view('layout/main', array(
             'title' => 'Kegiatan & Surat Tugas',
@@ -24,6 +37,8 @@ class Kegiatan extends MY_Controller
                 'penerima'    => $this->Penerima_model->with_budget_source($year),
                 'jenis'       => $this->Jenis_biaya_model->all(),
                 'sumber_dana' => $this->Sumber_dana_model->all(),
+                'tahun_anggaran' => $tahunAnggaran,
+                'tahun_aktif_id' => $year,
                 'can_create'  => can('kegiatan.create'),
                 'can_submit'  => can('kegiatan.ajukan'),
             )
@@ -37,7 +52,12 @@ class Kegiatan extends MY_Controller
         $this->require_any(array('kegiatan.view_all', 'kegiatan.view_own'));
         $scope = $this->rbac->scope('kegiatan');
         $ownId = $this->own_penerima_id();
-        $year  = (int)$this->session->userdata('tahun_aktif_id');
+        $year  = (int)($this->input->post('tahun_anggaran_id') ?: $this->input->get('tahun_anggaran_id'));
+        if (!$year) $year = (int)$this->session->userdata('tahun_aktif_id');
+        if (!$year || !$this->db->where('id', $year)->count_all_results('tahun_anggaran')) {
+            $this->respond_dt((int)($this->input->post('draw') ?: $this->input->get('draw')), 0, 0, array());
+            return;
+        }
         $canCreate = can('kegiatan.create');
 
         $columnMap = array(
@@ -171,7 +191,23 @@ class Kegiatan extends MY_Controller
         $this->require_any(array('kegiatan.create', 'kegiatan.update'));
 
         $id = decrypt_id($this->input->post('id'));
-        $tahunAnggaranId = (int)($this->input->post('tahun_anggaran_id') ?: $this->session->userdata('tahun_aktif_id'));
+        $existing = $id ? $this->Kegiatan_model->find($id) : NULL;
+        if ($id && !$existing) {
+            $this->respond(FALSE, 'Kegiatan tidak ditemukan.', array(), array(), 404);
+        }
+
+        // Tahun dipilih saat membuat kegiatan. Saat mengedit, tahun parent
+        // dipertahankan agar rincian biaya dan pos tidak berpindah tahun.
+        $tahunAnggaranId = $existing
+            ? (int)$existing['tahun_anggaran_id']
+            : (int)($this->input->post('tahun_anggaran_id') ?: $this->session->userdata('tahun_aktif_id'));
+        $tahunRow = $this->db->get_where('tahun_anggaran', array('id' => $tahunAnggaranId))->row_array();
+        if (!$tahunRow) {
+            $this->respond(FALSE, 'Tahun anggaran tidak valid.', array(), array('tahun_anggaran_id' => 'Pilih tahun anggaran yang tersedia.'), 422);
+        }
+        if (!empty($tahunRow['is_locked'])) {
+            $this->respond(FALSE, 'Tahun anggaran telah dikunci dan tidak dapat digunakan untuk kegiatan baru/edit.', array(), array(), 422);
+        }
 
         $data = array(
             'tahun_anggaran_id'   => $tahunAnggaranId,
