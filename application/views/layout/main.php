@@ -37,10 +37,12 @@
     <div class="sidebar-inner">
       <!-- Brand Logo -->
       <a class="brand" href="<?= site_url('dashboard') ?>">
-        <span class="brand-mark">S</span>
+        <img class="brand-logo"
+             src="<?= html_escape($this->config->item('logo_url')) ?>"
+             alt="Logo Sekretariat DPRD Kabupaten Bangka">
         <div>
-          <span class="brand-title">SIPede</span>
-          <span class="brand-subtitle">Dinas DPRD</span>
+          <span class="brand-title">SIPEDE</span>
+          <span class="brand-subtitle">Sekretariat DPRD Kabupaten Bangka</span>
         </div>
       </a>
 
@@ -81,7 +83,7 @@
         <a class="nav-link <?= ($cClass === 'rekapitulasi') ? 'active' : '' ?>" href="<?= site_url('rekapitulasi') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-receipt-cutoff"></i>
-          <span class="menu-title">Rekapitulasi Dinas</span>
+          <span class="menu-title">Rekapitulasi Perjalanan Dinas</span>
         </a>
         <?php endif; ?>
 

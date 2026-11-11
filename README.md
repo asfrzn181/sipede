@@ -1,4 +1,4 @@
-# SIPede — Sistem Informasi Perjalanan Dinas DPRD
+# SIPEDE — Sistem Informasi Perjalanan Dinas Sekretariat DPRD Kabupaten Bangka
 
 Aplikasi berbasis **CodeIgniter 3 + PHP 8.2** dengan arsitektur **Pos Anggaran** (DPRD per orang & Pendamping per pos jabatan), realisasi dinamis, verifikasi PPTK, KOP & tanda tangan resmi, ekspor PDF/Excel, dan DataTables Server-Side Processing.
 

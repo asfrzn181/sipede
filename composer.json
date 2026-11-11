@@ -1,6 +1,6 @@
 {
   "name": "dprd/anggaran-dprd",
-  "description": "Sistem Informasi Anggaran Dinas DPRD",
+  "description": "SIPEDE - Sistem Informasi Perjalanan Dinas Sekretariat DPRD Kabupaten Bangka",
   "type": "project",
   "require": {
     "php": ">=8.2",

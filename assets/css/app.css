@@ -35,17 +35,13 @@ body { background: var(--bg); color: #1e293b; font-family: system-ui, -apple-sys
   padding: 4px 8px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.brand-mark {
-  display: inline-grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.25rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #fff;
+  object-fit: contain;
   flex-shrink: 0;
 }
 .brand-title {
@@ -56,11 +52,12 @@ body { background: var(--bg); color: #1e293b; font-family: system-ui, -apple-sys
   line-height: 1.2;
 }
 .brand-subtitle {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  font-size: 0.62rem;
+  text-transform: none;
+  letter-spacing: 0.25px;
   color: #94a3b8;
   display: block;
+  line-height: 1.25;
 }
 
 /* Sidebar Nav */
@@ -202,8 +199,23 @@ body { background: var(--bg); color: #1e293b; font-family: system-ui, -apple-sys
 .stat-card span { display: block; color: #64748b; font-size: .9rem; }
 .stat-card strong { font-size: 1.55rem; margin-top: 8px; display: block; }
 .form-control,.form-select,.btn { min-height: 44px; }
-.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: linear-gradient(135deg,#eff6ff,#f8fafc); }
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  position: relative;
+  isolation: isolate;
+  background-color: #f8fafc;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.76)),
+    var(--login-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 .auth-card { background: #fff; border-radius: 20px; box-shadow: 0 16px 50px rgba(15,23,42,.1); padding: 34px; width: min(100%,420px); }
+.auth-logo { display: block; width: 104px; height: 104px; margin: 0 auto; object-fit: contain; }
 .sticky-summary { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e5e7eb; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 2; }
 .participant-card { border: 1px solid #e5e7eb; border-radius: 14px; background: #fff; padding: 16px; margin-bottom: 14px; }
 .participant-card .saldo { font-size: .85rem; }
