@@ -23,6 +23,9 @@
             <th>Role</th>
             <th>Tautan Penerima</th>
             <th style="width: 120px;">Status</th>
+            <?php if($can_reset_password): ?>
+            <th style="width: 170px;" class="text-end">Aksi</th>
+            <?php endif; ?>
           </tr>
         </thead>
         <tbody></tbody>
@@ -82,8 +85,40 @@ $(function(){
     },
     order: [[0, 'asc']],
     columnDefs: [
-      { targets: 4, className: 'text-center' }
+      { targets: 4, className: 'text-center' },
+      <?php if($can_reset_password): ?>
+      { targets: 5, className: 'text-end', orderable: false }
+      <?php endif; ?>
     ]
+  });
+
+  $(document).on('click', '.js-reset-password', function(){
+    var id = $(this).data('id');
+    var name = $(this).data('name');
+
+    Swal.fire({
+      title: 'Reset password?',
+      text: 'Password baru untuk ' + name + ' akan dibuat secara acak.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, reset',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#d97706'
+    }).then(function(result){
+      if (!result.isConfirmed) return;
+
+      App.ajax({url: window.APP.baseUrl + 'user/reset_password/' + id}).done(function(r){
+        if (r.status && r.data && r.data.password_awal) {
+          Swal.fire({
+            title: 'Password baru',
+            html: '<p class="mb-2">Simpan dan sampaikan password ini kepada pengguna:</p>'
+              + '<code class="fs-4 user-select-all">' + escapeHtml(r.data.password_awal) + '</code>',
+            icon: 'success',
+            confirmButtonText: 'Selesai'
+          });
+        }
+      });
+    });
   });
 
   $('#massPendamping').on('click', function(){

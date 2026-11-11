@@ -16,7 +16,8 @@ class User extends MY_Controller
             'data'  => array(
                 'rows'       => array(),
                 'roles'      => $this->User_model->roles(),
-                'pendamping' => $this->User_model->available_pendamping()
+                'pendamping' => $this->User_model->available_pendamping(),
+                'can_reset_password' => ($this->user['role'] ?? '') === 'SUPERADMIN',
             )
         ));
     }
@@ -44,6 +45,7 @@ class User extends MY_Controller
         );
 
         $data = array();
+        $canResetPassword = ($this->user['role'] ?? '') === 'SUPERADMIN';
         foreach ($rows as $row) {
             $namaHtml = '<span class="fw-semibold">' . html_escape($row['nama']) . '</span>';
             $usernameHtml = '<code>' . html_escape($row['username']) . '</code>';
@@ -53,13 +55,23 @@ class User extends MY_Controller
             $statusLabel = $row['is_active'] ? 'Aktif' : 'Nonaktif';
             $statusHtml = '<span class="badge text-bg-' . $statusBadge . '">' . $statusLabel . '</span>';
 
-            $data[] = array(
+            $actionHtml = '-';
+            if ($canResetPassword) {
+                $actionHtml = '<button type="button" class="btn btn-sm btn-outline-warning js-reset-password"'
+                    . ' data-id="' . encrypt_id((int)$row['id']) . '"'
+                    . ' data-name="' . html_escape($row['nama']) . '">'
+                    . '<i class="bi bi-key me-1"></i>Reset Password</button>';
+            }
+
+            $rowData = array(
                 $namaHtml,
                 $usernameHtml,
                 $roleHtml,
                 $penerimaHtml,
                 $statusHtml
             );
+            if ($canResetPassword) $rowData[] = $actionHtml;
+            $data[] = $rowData;
         }
 
         $this->respond_dt($params['draw'], $recordsTotal, $recordsFiltered, $data);
@@ -123,6 +135,9 @@ class User extends MY_Controller
     }
 
     public function reset_password($id): void {
+        if (($this->user['role'] ?? '') !== 'SUPERADMIN') {
+            $this->respond(FALSE, 'Hanya SUPERADMIN yang dapat mereset password pengguna.', array(), array(), 403);
+        }
         $id = decrypt_id($id);
         $row = $this->User_model->find($id);
         if (!$row) $this->respond(FALSE, 'User tidak ditemukan.', array(), array(), 404);
