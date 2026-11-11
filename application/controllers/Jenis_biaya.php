@@ -21,11 +21,13 @@ class Jenis_biaya extends MY_Controller {
 
     public function data(): void {
         $this->require_permission('jenis_biaya.view');
+        $canManage = can('jenis_biaya.manage');
 
         $columnMap = array(
             0 => 'kode',
             1 => 'nama',
-            2 => 'satuan'
+            2 => 'satuan',
+            3 => 'tampil_di_kegiatan'
         );
 
         $params = $this->dt_params($columnMap, 'nama', 'ASC');
@@ -44,8 +46,18 @@ class Jenis_biaya extends MY_Controller {
             $data[] = array(
                 '<code>' . html_escape($row['kode']) . '</code>',
                 '<span class="fw-medium">' . html_escape($row['nama']) . '</span>',
-                '<span class="badge text-bg-light border">' . html_escape($row['satuan']) . '</span>'
+                '<span class="badge text-bg-light border">' . html_escape($row['satuan'] ?: '-') . '</span>',
+                !empty($row['tampil_di_kegiatan'])
+                    ? '<span class="badge text-bg-success">Tampil</span>'
+                    : '<span class="badge text-bg-secondary">Tidak tampil</span>',
+                '<span class="small text-muted">' . html_escape($row['keterangan'] ?: '-') . '</span>'
             );
+            if ($canManage) {
+                $rowEnc = $row;
+                $rowEnc['id'] = encrypt_id($row['id']);
+                $rowJson = htmlspecialchars(json_encode($rowEnc), ENT_QUOTES, 'UTF-8');
+                $data[count($data) - 1][] = '<div class="text-end"><button class="btn btn-sm btn-outline-primary js-edit-jenis" data-row=\'' . $rowJson . '\'><i class="bi bi-pencil"></i></button></div>';
+            }
         }
 
         $this->respond_dt($params['draw'], $recordsTotal, $recordsFiltered, $data);
@@ -54,9 +66,11 @@ class Jenis_biaya extends MY_Controller {
     public function save(): void {
         $this->require_permission('jenis_biaya.manage');
         $data = array(
-            'kode'   => $this->input->post('kode', TRUE),
-            'nama'   => $this->input->post('nama', TRUE),
-            'satuan' => $this->input->post('satuan', TRUE)
+            'kode'               => $this->input->post('kode', TRUE),
+            'nama'               => $this->input->post('nama', TRUE),
+            'satuan'             => $this->input->post('satuan', TRUE),
+            'tampil_di_kegiatan' => (int)$this->input->post('tampil_di_kegiatan') === 1 ? 1 : 0,
+            'keterangan'         => trim((string)$this->input->post('keterangan', TRUE)),
         );
         if (!$data['kode'] || !$data['nama']) {
             $this->respond(FALSE, 'Kode dan nama wajib diisi.', array(), array(), 422);

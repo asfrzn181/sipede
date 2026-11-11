@@ -1,8 +1,28 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Jenis_biaya_model extends CI_Model {
-    public function all(): array {
-        return $this->db->order_by('nama')->get('jenis_biaya')->result_array();
+    private static bool $schemaChecked = false;
+
+    public function __construct() {
+        parent::__construct();
+        $this->ensure_schema();
+    }
+
+    private function ensure_schema(): void {
+        if (self::$schemaChecked || !$this->db->table_exists('jenis_biaya')) return;
+        self::$schemaChecked = true;
+        $fields = $this->db->list_fields('jenis_biaya');
+        if (!in_array('tampil_di_kegiatan', $fields, true)) {
+            $this->db->query("ALTER TABLE jenis_biaya ADD COLUMN tampil_di_kegiatan TINYINT(1) NOT NULL DEFAULT 1 AFTER satuan");
+        }
+        if (!in_array('keterangan', $fields, true)) {
+            $this->db->query("ALTER TABLE jenis_biaya ADD COLUMN keterangan TEXT NULL AFTER tampil_di_kegiatan");
+        }
+    }
+
+    public function all(bool $onlyVisible = false): array {
+        if ($onlyVisible) $this->db->where('tampil_di_kegiatan', 1);
+        return $this->db->where('is_active', 1)->order_by('nama')->get('jenis_biaya')->result_array();
     }
 
     public function count_all(): int {

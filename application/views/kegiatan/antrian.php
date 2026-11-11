@@ -7,6 +7,18 @@
     <span class="badge text-bg-warning">Verifikator diwajibkan memeriksa rincian kegiatan &amp; pagu sebelum menyetujui</span>
   </div>
   <div class="card-body p-3">
+    <ul class="nav nav-tabs mb-3" id="verifikasiTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" type="button" data-tab="queue">
+          <i class="bi bi-inbox me-1"></i> Belum Diverifikasi
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" type="button" data-tab="history">
+          <i class="bi bi-clock-history me-1"></i> History Verifikasi
+        </button>
+      </li>
+    </ul>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="antrianTable">
         <thead class="table-light">
@@ -14,7 +26,7 @@
             <th>Tema Kegiatan &amp; No. Surat</th>
             <th>Tanggal Pelaksanaan</th>
             <th>Pengaju</th>
-            <th class="no-sort text-end" style="width: 250px;">Aksi Verifikasi</th>
+            <th class="no-sort text-end" style="width: 250px;">Aksi</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -28,11 +40,20 @@ $(function(){
   var antrianDT = window.createDataTableServerSide('#antrianTable', {
     ajax: {
       url: window.APP.baseUrl + 'kegiatan/antrian_data'
+      ,data: function(d){
+        d.tab = $('#verifikasiTabs .nav-link.active').data('tab') || 'queue';
+      }
     },
     order: [[1, 'asc']],
     columnDefs: [
       { targets: 3, className: 'text-end', orderable: false }
     ]
+  });
+
+  $('#verifikasiTabs .nav-link').on('click', function(){
+    $('#verifikasiTabs .nav-link').removeClass('active');
+    $(this).addClass('active');
+    antrianDT.ajax.reload();
   });
 
   // Konfirmasi Setujui dengan SweetAlert (Delegated Event)

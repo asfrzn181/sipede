@@ -71,7 +71,11 @@ class Kegiatan extends MY_Controller
         );
 
         $params = $this->dt_params($columnMap, 'k.tanggal_mulai', 'DESC');
-        $filter = array('tahun_anggaran_id' => $year);
+        $tab = (string)($params['raw_input']['tab'] ?? 'unfinished');
+        $filter = array(
+            'tahun_anggaran_id' => $year,
+            'tab' => $tab === 'history' ? 'history' : 'unfinished'
+        );
 
         $recordsTotal = $this->Kegiatan_model->count_all($filter, $scope, $ownId);
         $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, $scope, $ownId, $params['search']);
@@ -109,7 +113,9 @@ class Kegiatan extends MY_Controller
             $tempatHtml = '<div><i class="bi bi-geo-alt text-danger me-1"></i>' . html_escape($row['tempat'] ?: '-') . '</div>';
             $pesertaHtml = '<div class="text-center"><span class="badge text-bg-light border">' . (int)($row['total_peserta'] ?? 0) . ' Org</span></div>';
             $totalHtml = '<div class="text-end fw-bold text-primary">' . rupiah($row['total']) . '</div>';
-            $statusHtml = '<div class="text-center"><span class="badge text-bg-' . $bClass . '">' . html_escape($row['status']) . '</span></div>';
+            $displayStatus = !empty($row['dicetak_at']) ? 'SELESAI DICETAK' : $row['status'];
+            $displayClass = !empty($row['dicetak_at']) ? 'info' : $bClass;
+            $statusHtml = '<div class="text-center"><span class="badge text-bg-' . $displayClass . '">' . html_escape($displayStatus) . '</span></div>';
 
             $rowEnc = $row;
             $rowEnc['id'] = $encId;
@@ -158,28 +164,30 @@ class Kegiatan extends MY_Controller
         $this->Pos_model->buat_pos_dprd_otomatis($year);
         $this->Pos_model->buat_pos_pendamping_baku($year);
 
-        $posPendamping = $this->Pos_model->all_by_tahun($year, 'PENDAMPING');
+        $posAnggaran = $this->Pos_model->all_by_tahun($year);
         $saldoList = $this->Pos_model->saldo_by_tahun($year);
         $saldoMap  = array_column($saldoList, null, 'pos_anggaran_id');
 
-        foreach ($posPendamping as &$pp) {
-            $s = $saldoMap[$pp['id']] ?? [];
-            $pp['sisa'] = (float)($s['sisa'] ?? $pp['pagu']);
-            $pp['realisasi'] = (float)($s['realisasi'] ?? 0);
+        foreach ($posAnggaran as &$pos) {
+            $s = $saldoMap[$pos['id']] ?? [];
+            $pos['sisa'] = (float)($s['sisa'] ?? $pos['pagu']);
+            $pos['realisasi'] = (float)($s['realisasi'] ?? 0);
         }
-        unset($pp);
+        unset($pos);
 
         $this->load->view('layout/main', array(
             'title' => 'Rincian Kegiatan: ' . ($kegiatan['no_surat_tugas'] ?: $kegiatan['nama_kegiatan']),
             'view'  => 'kegiatan/rincian',
             'data'  => array(
                 'kegiatan'       => $kegiatan,
-                'penerima'       => $this->Penerima_model->all(),
+                'penerima'       => $this->Penerima_model->all_active(),
                 'sumber_dana'    => $this->Sumber_dana_model->all(),
                 'jenis_biaya'    => $this->Jenis_biaya_model->all(),
-                'pos_pendamping' => $posPendamping,
-                'can_update'     => can('kegiatan.update') || can('kegiatan.create'),
+                'pos_anggaran'   => $posAnggaran,
+                'can_update'     => (can('kegiatan.update') || can('kegiatan.create'))
+                    && ($this->rbac->scope('kegiatan') !== 'own' || in_array($kegiatan['status'], array('DRAFT', 'DITOLAK'), TRUE)),
                 'can_submit'     => can('kegiatan.ajukan'),
+                'is_own_scope'   => $this->rbac->scope('kegiatan') === 'own',
             )
         ));
     }
@@ -194,6 +202,10 @@ class Kegiatan extends MY_Controller
         $existing = $id ? $this->Kegiatan_model->find($id) : NULL;
         if ($id && !$existing) {
             $this->respond(FALSE, 'Kegiatan tidak ditemukan.', array(), array(), 404);
+        }
+        if ($existing && $this->rbac->scope('kegiatan') === 'own'
+            && !$this->Kegiatan_model->belongs_to_penerima($id, $this->own_penerima_id())) {
+            $this->deny();
         }
 
         // Tahun dipilih saat membuat kegiatan. Saat mengedit, tahun parent
@@ -219,7 +231,9 @@ class Kegiatan extends MY_Controller
             'tempat'              => trim((string)$this->input->post('tempat', TRUE)),
             'tema'                => trim((string)$this->input->post('tema', TRUE)),
             'nama_kegiatan'       => trim((string)$this->input->post('tema', TRUE)),
-            'status'              => $this->input->post('status', TRUE) ?: 'DRAFT',
+            'status'              => $this->rbac->scope('kegiatan') === 'own'
+                ? 'DRAFT'
+                : ($this->input->post('status', TRUE) ?: 'DRAFT'),
         );
 
         if (empty($data['no_surat_tugas'])) {
@@ -230,6 +244,24 @@ class Kegiatan extends MY_Controller
         }
 
         $savedId = $this->Kegiatan_model->save_header($data, $id ?: NULL, (int)$this->user['id']);
+
+        if ($this->rbac->scope('kegiatan') === 'own') {
+            $ownPenerimaId = $this->own_penerima_id();
+            if (!$ownPenerimaId) {
+                $this->respond(FALSE, 'Akun belum memiliki identitas pendamping. Silakan hubungi administrator.', array(), array(), 422);
+            }
+            $alreadyOwn = $this->db->where(array('kegiatan_id' => $savedId, 'penerima_id' => $ownPenerimaId))
+                ->count_all_results('kegiatan_peserta');
+            if (!$alreadyOwn) {
+                $this->Pos_model->buat_pos_pendamping_baku($tahunAnggaranId);
+                $defaultPos = $this->Pos_model->pos_default_penerima($ownPenerimaId, $tahunAnggaranId);
+                $this->db->insert('kegiatan_peserta', array(
+                    'kegiatan_id' => $savedId,
+                    'penerima_id' => $ownPenerimaId,
+                    'pos_anggaran_id' => $defaultPos ? (int)$defaultPos['id'] : NULL,
+                ));
+            }
+        }
 
         $this->Audit_model->write(
             'KEGIATAN',
@@ -269,6 +301,22 @@ class Kegiatan extends MY_Controller
             $this->respond(FALSE, 'Kegiatan tidak ditemukan.', array(), array(), 404);
         }
 
+        if ($this->rbac->scope('kegiatan') === 'own') {
+            $ownPenerimaId = $this->own_penerima_id();
+            if (!$ownPenerimaId || $penerimaId !== $ownPenerimaId
+                || !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) {
+                $this->deny();
+            }
+            if ($kegiatanPesertaId) {
+                $ownedParticipant = $this->db->where(array(
+                    'id' => $kegiatanPesertaId,
+                    'kegiatan_id' => $kegiatanId,
+                    'penerima_id' => $ownPenerimaId
+                ))->count_all_results('kegiatan_peserta');
+                if (!$ownedParticipant) $this->deny();
+            }
+        }
+
         $year = (int)$kegiatan['tahun_anggaran_id'];
 
         // Cek kunci tahun
@@ -288,29 +336,37 @@ class Kegiatan extends MY_Controller
             $this->respond(FALSE, 'Data penerima tidak ditemukan.', array(), array(), 404);
         }
 
-        // ATURAN POS ANGGARAN:
-        if ($penerima['tipe'] === 'DPRD') {
-            // Anggota DPRD selalu memakai pos miliknya sendiri dan tidak bisa dialihkan
-            $posDprd = $this->Pos_model->pos_default_penerima($penerimaId, $year);
-            if (!$posDprd) {
-                $this->Pos_model->buat_pos_dprd_otomatis($year);
-                $posDprd = $this->Pos_model->pos_default_penerima($penerimaId, $year);
-            }
-            $posAnggaranId = $posDprd ? (int)$posDprd['id'] : NULL;
-            $alasanPengalihan = NULL; // Tidak boleh dialihkan
-        } else {
-            // Pendamping: default memakai pos jabatannya yang aktif, boleh dialihkan ke pos pendamping lain
+        // Semua peserta memiliki anggaran bawaan, tetapi sumber anggaran dapat
+        // dipilih eksplisit. Pendamping dapat memakai pos DPRD dan sebaliknya.
+        $posDefault = $this->Pos_model->pos_default_penerima($penerimaId, $year);
+        if (!$posDefault && $penerima['tipe'] === 'DPRD') {
+            $this->Pos_model->buat_pos_dprd_otomatis($year);
             $posDefault = $this->Pos_model->pos_default_penerima($penerimaId, $year);
-            if (!$posAnggaranId) {
-                $posAnggaranId = $posDefault ? (int)$posDefault['id'] : NULL;
-            }
+        }
+        if (!$posAnggaranId) {
+            $posAnggaranId = $posDefault ? (int)$posDefault['id'] : NULL;
+        }
 
-            // Jika pos yang dibebani berbeda dari pos default aktifnya, wajib menyertakan alasan
-            if ($posDefault && $posAnggaranId && (int)$posDefault['id'] !== (int)$posAnggaranId) {
-                if (empty($alasanPengalihan)) {
-                    $this->respond(FALSE, 'Alasan pengalihan pos anggaran wajib diisi saat membebankan kegiatan ke pos pendamping lain.', array(), array('alasan_pengalihan' => 'Alasan pengalihan wajib diisi.'), 422);
-                }
+        $posDipilih = $posAnggaranId ? $this->Pos_model->find((int)$posAnggaranId) : NULL;
+        if ($posAnggaranId && !$posDipilih) {
+            $this->respond(FALSE, 'Pos anggaran tidak ditemukan.', array(), array('pos_anggaran_id' => 'Tidak valid.'), 422);
+        }
+        if ($posDipilih && ((int)$posDipilih['tahun_anggaran_id'] !== $year || empty($posDipilih['is_active']))) {
+            $this->respond(FALSE, 'Pos anggaran tidak tersedia pada tahun kegiatan.', array(), array(), 422);
+        }
+
+        $satuKelompokJabatan = $posDefault && $posDipilih
+            && strcasecmp(trim((string)$posDefault['nama']), trim((string)$posDipilih['nama'])) === 0;
+
+        if ($satuKelompokJabatan) {
+            $alasanPengalihan = NULL;
+        } elseif ($posDefault && $posAnggaranId && (int)$posDefault['id'] !== (int)$posAnggaranId) {
+            if (empty($alasanPengalihan)) {
+                $this->respond(FALSE, 'Alasan penggunaan pos anggaran lain wajib diisi.', array(), array('alasan_pengalihan' => 'Wajib diisi.'), 422);
             }
+        }
+        if (!$posAnggaranId) {
+            $this->respond(FALSE, 'Pos anggaran wajib dipilih.', array(), array('pos_anggaran_id' => 'Wajib dipilih.'), 422);
         }
 
         // VALIDASI SALDO POS YANG DIBEBANI:
@@ -373,6 +429,14 @@ class Kegiatan extends MY_Controller
         $rawId = decrypt_id($id);
         if (!$rawId) $this->respond(FALSE, 'ID tidak valid.', array(), array(), 422);
 
+        if ($this->rbac->scope('kegiatan') === 'own') {
+            $ownedParticipant = $this->db->from('kegiatan_peserta')
+                ->where('id', $rawId)
+                ->where('penerima_id', $this->own_penerima_id())
+                ->count_all_results();
+            if (!$ownedParticipant) $this->deny();
+        }
+
         $ok = $this->Kegiatan_model->delete_peserta($rawId);
         if ($ok) {
             $this->Audit_model->write('KEGIATAN_PESERTA', $rawId, 'HAPUS_PESERTA', array(), array(), (int)$this->user['id']);
@@ -392,6 +456,21 @@ class Kegiatan extends MY_Controller
 
         $kegiatan = $this->Kegiatan_model->get_full_detail($kegiatanId);
         if (!$kegiatan) show_404();
+
+        if ($this->rbac->scope('kegiatan') === 'own'
+            && !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $this->own_penerima_id())) {
+            $this->deny();
+        }
+
+        if (empty($kegiatan['dicetak_at'])) {
+            $printedAt = date('Y-m-d H:i:s');
+            $this->db->where('id', $kegiatanId)->update('kegiatan', array(
+                'dicetak_at' => $printedAt,
+                'dicetak_oleh' => (int)$this->user['id'],
+            ));
+            $this->Audit_model->write('KEGIATAN', $kegiatanId, 'CETAK_BUKTI', array(), array(), (int)$this->user['id']);
+            $kegiatan['dicetak_at'] = $printedAt;
+        }
 
         // Hitung durasi hari pelaksanaan
         $start = strtotime($kegiatan['tanggal_mulai']);
@@ -467,7 +546,9 @@ class Kegiatan extends MY_Controller
             2 => 'k.diajukan_oleh'
         );
         $params = $this->dt_params($columnMap, 'k.created_at', 'ASC');
-        $filter = array('status' => 'DIAJUKAN');
+        $tab = (string)($params['raw_input']['tab'] ?? 'queue');
+        $isHistory = $tab === 'history';
+        $filter = array('verification_tab' => $isHistory ? 'history' : 'queue');
 
         $recordsTotal = $this->Kegiatan_model->count_all($filter, 'all');
         $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, 'all', null, $params['search']);
@@ -492,13 +573,22 @@ class Kegiatan extends MY_Controller
                 . '<div class="small text-muted">No: <code>' . html_escape($row['no_surat_tugas'] ?: '-') . '</code></div></div>';
 
             $tglHtml = '<div><div>' . tgl_indo($row['tanggal_mulai']) . '</div><small class="text-muted">s/d ' . tgl_indo($row['tanggal_selesai']) . '</small></div>';
-            $pengajuHtml = '<div><span class="badge text-bg-light border">User #' . (int)$row['diajukan_oleh'] . '</span></div>';
-
-            $aksiHtml = '<div class="text-end text-nowrap">'
-                . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm me-1" title="Periksa Rincian & Verifikasi"><i class="bi bi-search"></i> <span>Periksa Rincian</span></a>'
-                . '<button class="btn btn-sm btn-success js-verify me-1" data-id="' . $encId . '" data-nama="' . $nama . '" title="Setujui Langsung"><i class="bi bi-check-lg"></i></button>'
-                . '<button class="btn btn-sm btn-outline-danger js-reject" data-id="' . $encId . '" data-nama="' . $nama . '" title="Tolak"><i class="bi bi-x-lg"></i></button>'
-                . '</div>';
+            if ($isHistory) {
+                $statusClass = $row['status'] === 'AKTIF' ? 'success' : ($row['status'] === 'DITOLAK' ? 'danger' : 'secondary');
+                $pengajuHtml = '<div><span class="badge text-bg-' . $statusClass . '">' . html_escape($row['status']) . '</span>'
+                    . '<div class="small text-muted mt-1">Diverifikasi: ' . ($row['diverifikasi_at'] ? tgl_indo(substr($row['diverifikasi_at'], 0, 10)) : '-') . '</div></div>';
+                $aksiHtml = '<div class="text-end text-nowrap">'
+                    . '<a href="' . site_url('kegiatan/bukti_rekap/' . $encId) . '" class="btn btn-sm btn-outline-info me-1" title="Cetak bukti ulang"><i class="bi bi-printer"></i> Cetak Bukti</a>'
+                    . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-sm btn-outline-primary" title="Lihat rincian"><i class="bi bi-eye"></i></a>'
+                    . '</div>';
+            } else {
+                $pengajuHtml = '<div><span class="badge text-bg-light border">User #' . (int)$row['diajukan_oleh'] . '</span></div>';
+                $aksiHtml = '<div class="text-end text-nowrap">'
+                    . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm me-1" title="Periksa Rincian & Verifikasi"><i class="bi bi-search"></i> <span>Periksa Rincian</span></a>'
+                    . '<button class="btn btn-sm btn-success js-verify me-1" data-id="' . $encId . '" data-nama="' . $nama . '" title="Setujui Langsung"><i class="bi bi-check-lg"></i></button>'
+                    . '<button class="btn btn-sm btn-outline-danger js-reject" data-id="' . $encId . '" data-nama="' . $nama . '" title="Tolak"><i class="bi bi-x-lg"></i></button>'
+                    . '</div>';
+            }
 
             $data[] = array(
                 $temaHtml,

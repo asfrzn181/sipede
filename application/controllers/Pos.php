@@ -218,7 +218,7 @@ class Pos extends MY_Controller
             [], ['pos_id' => $posId, 'penerima_id' => $penerimaId, 'mulai' => $mulai, 'keterangan' => $keterangan],
             (int)$this->user['id']);
 
-        $this->respond(true, 'Penugasan berhasil disimpan. Pemegang pos diperbarui.', [
+        $this->respond(true, 'Penugasan berhasil disimpan. Pemegang ditambahkan ke pos bersama.', [
             'penugasan_id' => encrypt_id($tugasId)
         ]);
     }

@@ -67,10 +67,6 @@ class User_model extends CI_Model {
         return $this->db->where('aktif',1)->order_by('nama')->get('roles')->result_array();
     }
 
-    public function available_pendamping(): array {
-        return $this->db->select('p.*')->from('penerima p')->join('users u','u.penerima_id=p.id','left')->where('p.tipe','PENDAMPING')->where('p.is_active',1)->where('u.id IS NULL',NULL,FALSE)->get()->result_array();
-    }
-
     public function find(int $id): ?array {
         return $this->db->get_where('users',array('id'=>$id))->row_array() ?: NULL;
     }

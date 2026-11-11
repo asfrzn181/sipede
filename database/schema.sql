@@ -1,13 +1,16 @@
 -- =============================================================================
 -- SIPEDE (Sistem Informasi Perjalanan Dinas DPRD)
--- SKEMA DATABASE LENGKAP & BERSIH (FULL SCHEMA DEFINITION)
+-- SKEMA DATABASE BERSIH TERBARU
 -- =============================================================================
 
--- CREATE DATABASE IF NOT EXISTS `anggaran_dprd` 
--- CHARACTER SET utf8mb4
--- COLLATE utf8mb4_unicode_ci;
+-- Pilih database tujuan terlebih dahulu di phpMyAdmin/cPanel.
+-- File ini sengaja tidak memakai CREATE DATABASE atau USE agar dapat
+-- digunakan pada nama database lokal maupun cPanel.
 
--- USE `anggaran_dprd`;
+DROP VIEW IF EXISTS `v_detail_biaya`;
+DROP VIEW IF EXISTS `v_sisa_anggaran`;
+DROP VIEW IF EXISTS `v_sisa_pos`;
+DROP VIEW IF EXISTS `v_realisasi`;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -74,7 +77,7 @@ DROP TABLE IF EXISTS `penerima`;
 CREATE TABLE `penerima` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nama` VARCHAR(150) NOT NULL,
-  `tipe` VARCHAR(30) NOT NULL,
+  `tipe` VARCHAR(30) NOT NULL, -- 'DPRD' / 'PENDAMPING'
   `jabatan` VARCHAR(80) NULL,
   `periode_mulai` SMALLINT UNSIGNED NULL,
   `periode_akhir` SMALLINT UNSIGNED NULL,
@@ -101,12 +104,15 @@ CREATE TABLE `jenis_biaya` (
   `kode` VARCHAR(30) NOT NULL UNIQUE,
   `nama` VARCHAR(120) NOT NULL,
   `satuan` VARCHAR(30) NULL,
+  `tampil_di_kegiatan` TINYINT(1) NOT NULL DEFAULT 1,
+  `keterangan` TEXT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
 -- 4. Pos Anggaran & Penugasan Pos
+-- (Konsep baru: pagu DPRD melekat per orang, pagu Pendamping melekat per pos jabatan)
 -- -----------------------------------------------------------------------------
 DROP TABLE IF EXISTS `penugasan_pos`;
 DROP TABLE IF EXISTS `pos_anggaran`;
@@ -117,7 +123,7 @@ CREATE TABLE `pos_anggaran` (
   `kode` VARCHAR(50) NOT NULL,
   `nama` VARCHAR(200) NOT NULL,
   `tipe` ENUM('DPRD','PENDAMPING') NOT NULL,
-  `penerima_id` INT UNSIGNED NULL,
+  `penerima_id` INT UNSIGNED NULL, -- Melekat tetap pada anggota DPRD
   `pagu` DECIMAL(18,2) NOT NULL DEFAULT 0,
   `kelompok_jabatan` ENUM('KETUA','WAKIL_KETUA','ANGGOTA') NULL,
   `urutan` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -173,7 +179,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
--- 6. Tabel Pagu Anggaran Konvensional
+-- 6. Tabel Pagu Anggaran Konvensional (Legacy Compatibility & Detail)
 -- -----------------------------------------------------------------------------
 DROP TABLE IF EXISTS `anggaran_rincian`;
 DROP TABLE IF EXISTS `anggaran`;
@@ -231,13 +237,17 @@ CREATE TABLE `kegiatan` (
   `created_by` INT UNSIGNED NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `dicetak_at` DATETIME NULL,
+  `dicetak_oleh` INT UNSIGNED NULL,
   PRIMARY KEY (`id`),
   INDEX `idx_kegiatan_tanggal` (`tanggal_mulai`),
   INDEX `idx_kegiatan_status` (`status`),
+  INDEX `idx_kegiatan_dicetak` (`dicetak_at`),
   CONSTRAINT `fk_kegiatan_tahun` FOREIGN KEY (`tahun_anggaran_id`) REFERENCES `tahun_anggaran` (`id`),
   CONSTRAINT `fk_kegiatan_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_kegiatan_submitter` FOREIGN KEY (`diajukan_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_kegiatan_verifier` FOREIGN KEY (`diverifikasi_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_kegiatan_verifier` FOREIGN KEY (`diverifikasi_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_kegiatan_printer` FOREIGN KEY (`dicetak_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `kegiatan_peserta` (
@@ -245,8 +255,8 @@ CREATE TABLE `kegiatan_peserta` (
   `kegiatan_id` INT UNSIGNED NOT NULL,
   `penerima_id` INT UNSIGNED NOT NULL,
   `sumber_dana_id` INT UNSIGNED NULL,
-  `pos_anggaran_id` INT UNSIGNED NULL,
-  `alasan_pengalihan` TEXT NULL,
+  `pos_anggaran_id` INT UNSIGNED NULL,     -- Pos anggaran yang dibebani
+  `alasan_pengalihan` TEXT NULL,           -- Catatan bila dialihkan ke pos lain
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_kegiatan_peserta` (`kegiatan_id`, `penerima_id`),
   INDEX `idx_kp_pos_anggaran` (`pos_anggaran_id`),
@@ -314,18 +324,21 @@ CREATE TABLE `pengaturan_dokumen` (
   `logo_path` VARCHAR(255) NULL,
   `kota_penetapan` VARCHAR(100) NOT NULL DEFAULT 'Ibukota',
 
+  -- Penandatangan 1: Pengguna Anggaran (Sekretaris DPRD)
   `pa_label` VARCHAR(100) NOT NULL DEFAULT 'Mengetahui,\nPengguna Anggaran',
   `pa_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Sekretaris DPRD',
   `pa_nama` VARCHAR(150) NOT NULL DEFAULT 'Drs. H. AHMAD FAUZI, M.Si',
   `pa_nip` VARCHAR(50) NOT NULL DEFAULT '19750812 199803 1 002',
   `pa_pangkat` VARCHAR(100) NULL DEFAULT 'Pembina Utama Muda (IV/c)',
 
+  -- Penandatangan 2: PPTK
   `pptk_label` VARCHAR(100) NOT NULL DEFAULT 'Pejabat Pelaksana Teknis Kegiatan',
   `pptk_jabatan` VARCHAR(150) NOT NULL DEFAULT 'PPTK Perjalanan Dinas',
   `pptk_nama` VARCHAR(150) NOT NULL DEFAULT 'BAMBANG SUSANTO, S.E., M.M.',
   `pptk_nip` VARCHAR(50) NOT NULL DEFAULT '19820415 200501 1 008',
   `pptk_pangkat` VARCHAR(100) NULL DEFAULT 'Penata Tk. I (III/d)',
 
+  -- Penandatangan 3: Bendahara Pengeluaran
   `bendahara_label` VARCHAR(100) NOT NULL DEFAULT 'Bendahara Pengeluaran',
   `bendahara_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Bendahara Pengeluaran',
   `bendahara_nama` VARCHAR(150) NOT NULL DEFAULT 'SITI NURHALIZA, S.Ak.',
@@ -337,8 +350,10 @@ CREATE TABLE `pengaturan_dokumen` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
--- 9. Database Views
+-- 9. Database Views untuk Kalkulasi Otomatis dan Reporting
 -- -----------------------------------------------------------------------------
+
+-- View 1: Realisasi per penerima untuk kegiatan AKTIF
 CREATE OR REPLACE VIEW `v_realisasi` AS
 SELECT 
   k.tahun_anggaran_id, 
@@ -350,6 +365,7 @@ JOIN `kegiatan_biaya` kb   ON kb.kegiatan_peserta_id = kp.id
 WHERE k.status = 'AKTIF'
 GROUP BY k.tahun_anggaran_id, kp.penerima_id;
 
+-- View 2: Saldo dan Realisasi per Pos Anggaran
 CREATE OR REPLACE VIEW `v_sisa_pos` AS
 SELECT
   pa.id AS pos_anggaran_id,
@@ -360,14 +376,15 @@ SELECT
   pa.penerima_id,
   pa.pagu,
   pa.kelompok_jabatan,
-  COALESCE(SUM(kb.volume * kb.tarif), 0) AS realisasi,
-  pa.pagu - COALESCE(SUM(kb.volume * kb.tarif), 0) AS sisa
+  COALESCE(SUM(CASE WHEN k.status = 'AKTIF' THEN kb.volume * kb.tarif ELSE 0 END), 0) AS realisasi,
+  pa.pagu - COALESCE(SUM(CASE WHEN k.status = 'AKTIF' THEN kb.volume * kb.tarif ELSE 0 END), 0) AS sisa
 FROM `pos_anggaran` pa
 LEFT JOIN `kegiatan_peserta` kp ON kp.pos_anggaran_id = pa.id
 LEFT JOIN `kegiatan_biaya` kb   ON kb.kegiatan_peserta_id = kp.id
-LEFT JOIN `kegiatan` k          ON k.id = kp.kegiatan_id AND k.status NOT IN ('BATAL')
+LEFT JOIN `kegiatan` k          ON k.id = kp.kegiatan_id AND k.status = 'AKTIF'
 GROUP BY pa.id;
 
+-- View 3: Sisa Anggaran Konvensional (Legacy Compatibility)
 CREATE OR REPLACE VIEW `v_sisa_anggaran` AS
 SELECT 
   a.tahun_anggaran_id,
@@ -386,6 +403,7 @@ JOIN `penerima` p ON p.id = a.penerima_id
 LEFT JOIN `sumber_dana` sd ON sd.id = a.sumber_dana_id
 LEFT JOIN `v_realisasi` r ON r.tahun_anggaran_id = a.tahun_anggaran_id AND r.penerima_id = a.penerima_id;
 
+-- View 4: Detail Biaya untuk Laporan & Export
 CREATE OR REPLACE VIEW `v_detail_biaya` AS
 SELECT 
   k.id AS kegiatan_id,
@@ -422,3 +440,4 @@ JOIN `kegiatan_biaya` kb   ON kb.kegiatan_peserta_id = kp.id
 JOIN `jenis_biaya` j       ON j.id = kb.jenis_biaya_id;
 
 SET FOREIGN_KEY_CHECKS = 1;
+

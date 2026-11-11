@@ -16,7 +16,6 @@ class User extends MY_Controller
             'data'  => array(
                 'rows'       => array(),
                 'roles'      => $this->User_model->roles(),
-                'pendamping' => $this->User_model->available_pendamping(),
                 'can_reset_password' => ($this->user['role'] ?? '') === 'SUPERADMIN',
             )
         ));
@@ -103,8 +102,29 @@ class User extends MY_Controller
         $penerimaId = $rawPenerima !== '' && $rawPenerima !== null ? decrypt_id($rawPenerima) : NULL;
 
         if ($role['kode'] === 'PENDAMPING') {
-            if (!$penerimaId || !$this->db->where(array('id' => $penerimaId, 'tipe' => 'PENDAMPING', 'is_active' => 1))->count_all_results('penerima')) {
-                $this->respond(FALSE, 'User PENDAMPING wajib terhubung ke penerima PENDAMPING aktif.', array(), array(), 422);
+            $jabatan = trim((string)$this->input->post('jabatan', TRUE)) ?: 'Pendamping';
+            $linked = $penerimaId ? $this->db->get_where('penerima', array('id' => $penerimaId))->row_array() : NULL;
+            if (!$linked || $linked['tipe'] !== 'PENDAMPING') {
+                // Tidak ada lagi input dari Master Pendamping. Record penerima
+                // dibuat otomatis agar kegiatan tetap memiliki identitas dan
+                // pos anggaran bawaan yang dapat dipakai oleh workflow lama.
+                $linked = NULL;
+            }
+            if ($linked) {
+                $penerimaId = (int)$linked['id'];
+                $this->db->where('id', $penerimaId)->update('penerima', array(
+                    'nama' => $this->input->post('nama', TRUE),
+                    'jabatan' => $jabatan,
+                    'is_active' => 1,
+                ));
+            } else {
+                $this->db->insert('penerima', array(
+                    'nama' => $this->input->post('nama', TRUE),
+                    'tipe' => 'PENDAMPING',
+                    'jabatan' => $jabatan,
+                    'is_active' => 1,
+                ));
+                $penerimaId = (int)$this->db->insert_id();
             }
         }
 
@@ -147,23 +167,4 @@ class User extends MY_Controller
         $this->respond(TRUE, 'Password direset.', array('password_awal' => $password));
     }
 
-    public function mass_pendamping(): void {
-        $out = array();
-        foreach ($this->User_model->available_pendamping() as $person) {
-            $role = $this->db->get_where('roles', array('kode' => 'PENDAMPING'))->row_array();
-            $username = 'pendamping' . (int)$person['id'];
-            $password = bin2hex(random_bytes(5));
-            $id = $this->User_model->save(array(
-                'username'             => $username,
-                'nama'                 => $person['nama'],
-                'role_id'              => $role['id'],
-                'penerima_id'          => $person['id'],
-                'is_active'            => 1,
-                'wajib_ganti_password' => 1,
-                'password'             => $password
-            ));
-            $out[] = array('username' => $username, 'password' => $password, 'nama' => $person['nama']);
-        }
-        $this->respond(TRUE, 'Akun pendamping dibuat.', array('accounts' => $out));
-    }
 }

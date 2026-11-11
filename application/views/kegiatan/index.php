@@ -1,7 +1,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
     <h1 class="h5 fw-bold text-dark mb-0">Daftar Kegiatan &amp; Surat Tugas</h1>
-    <p class="text-muted small mb-0">Kelola kegiatan berdasarkan tahun anggaran, lalu input peserta dan pendamping pada rincian.</p>
+    <p class="text-muted small mb-0">Input kegiatan sampai bukti siap dicetak. Setelah bukti dibuka, kegiatan tersimpan di History.</p>
   </div>
   <?php if($can_create): ?>
   <button class="btn btn-primary d-flex align-items-center gap-1 shadow-sm" id="btnSuratTugasBaru">
@@ -29,6 +29,18 @@
     </div>
   </div>
   <div class="card-body p-3">
+    <ul class="nav nav-tabs mb-3" id="kegiatanTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" type="button" data-tab="unfinished">
+          <i class="bi bi-pencil-square me-1"></i> Belum Selesai
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" type="button" data-tab="history">
+          <i class="bi bi-clock-history me-1"></i> History Kegiatan
+        </button>
+      </li>
+    </ul>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="kegiatanTable">
         <thead class="table-light">
@@ -130,6 +142,7 @@ $(function(){
       url: window.APP.baseUrl + 'kegiatan/data',
       data: function(d){
         d.tahun_anggaran_id = $('#filterTahunKegiatan').val();
+        d.tab = $('#kegiatanTabs .nav-link.active').data('tab') || 'unfinished';
       }
     },
     order: [[2, 'desc']],
@@ -141,6 +154,12 @@ $(function(){
   });
 
   $('#filterTahunKegiatan').on('change', function(){
+    kegiatanDT.ajax.reload();
+  });
+
+  $('#kegiatanTabs .nav-link').on('click', function(){
+    $('#kegiatanTabs .nav-link').removeClass('active');
+    $(this).addClass('active');
     kegiatanDT.ajax.reload();
   });
 

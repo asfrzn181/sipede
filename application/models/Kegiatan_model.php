@@ -2,6 +2,21 @@
 
 class Kegiatan_model extends CI_Model {
 
+    private function apply_workflow_tab(array $filter): void {
+        if (($filter['tab'] ?? '') === 'history') {
+            $this->db->where('k.dicetak_at IS NOT NULL', NULL, FALSE);
+        } elseif (($filter['tab'] ?? '') === 'unfinished') {
+            $this->db->where('k.dicetak_at IS NULL', NULL, FALSE);
+        }
+
+        if (($filter['verification_tab'] ?? '') === 'queue') {
+            $this->db->where('k.status', 'DIAJUKAN');
+        } elseif (($filter['verification_tab'] ?? '') === 'history') {
+            $this->db->where('k.diverifikasi_at IS NOT NULL', NULL, FALSE);
+            $this->db->where('k.status !=', 'DIAJUKAN');
+        }
+    }
+
     public function find(int $id): ?array {
         return $this->db->get_where('kegiatan', array('id' => $id))->row_array() ?: NULL;
     }
@@ -30,6 +45,7 @@ class Kegiatan_model extends CI_Model {
         if (!empty($filter['tahun_anggaran_id'])) {
             $this->db->where('k.tahun_anggaran_id', (int)$filter['tahun_anggaran_id']);
         }
+        $this->apply_workflow_tab($filter);
         if ($search !== '') {
             $this->db->group_start();
             $this->db->like('k.nama_kegiatan', $search);
@@ -81,6 +97,7 @@ class Kegiatan_model extends CI_Model {
         if (!empty($filter['tahun_anggaran_id'])) {
             $this->db->where('k.tahun_anggaran_id', (int)$filter['tahun_anggaran_id']);
         }
+        $this->apply_workflow_tab($filter);
 
         if ($search !== '') {
             $this->db->group_start();
@@ -186,7 +203,7 @@ class Kegiatan_model extends CI_Model {
 
         foreach ($pesertaRows as $p) {
             // Rincian biaya peserta
-            $biayaList = $this->db->select('kb.*, jb.kode AS jenis_biaya_kode, COALESCE(jb.nama, "Biaya Perjalanan") AS jenis_biaya_nama, jb.satuan', FALSE)
+            $biayaList = $this->db->select('kb.*, jb.kode AS jenis_biaya_kode, COALESCE(jb.nama, "Biaya Perjalanan") AS jenis_biaya_nama, jb.satuan, jb.keterangan AS jenis_biaya_keterangan', FALSE)
                 ->from('kegiatan_biaya kb')
                 ->join('jenis_biaya jb', 'jb.id = kb.jenis_biaya_id', 'left')
                 ->where('kb.kegiatan_peserta_id', $p['id'])

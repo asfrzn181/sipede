@@ -29,7 +29,7 @@
     <?php endif; ?>
 
     <!-- Tombol Tambah Peserta -->
-    <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?>
+    <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK')) && empty($is_own_scope)): ?>
     <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" id="btnTambahPeserta">
       <i class="bi bi-person-plus-fill"></i>
       <span>Tambah Peserta / Pendamping</span>
@@ -159,7 +159,7 @@
       <span>Daftar Peserta &amp; Pendamping Perjalanan Dinas</span>
       <span class="badge text-bg-light border"><?= count($kegiatan['peserta']) ?> Orang</span>
     </div>
-    <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?>
+    <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK')) && empty($is_own_scope)): ?>
     <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1" id="btnTambahPeserta2">
       <i class="bi bi-plus-lg"></i>
       <span>Tambah Peserta</span>
@@ -260,6 +260,9 @@
                     <?php if($b['satuan']): ?>
                       <span class="text-muted small">(<?= html_escape($b['satuan']) ?>)</span>
                     <?php endif; ?>
+                    <?php if(!empty($b['jenis_biaya_keterangan'])): ?>
+                      <div class="small text-muted fst-italic"><?= html_escape($b['jenis_biaya_keterangan']) ?></div>
+                    <?php endif; ?>
                   </td>
                   <td class="text-center"><?= (float)$b['volume'] ?></td>
                   <td class="text-end"><?= rupiah($b['tarif']) ?></td>
@@ -355,23 +358,23 @@
           <!-- Pilih Penerima & Pos Anggaran -->
           <div class="row g-3 mb-4">
             <div class="col-12 col-md-6">
-              <label class="form-label small fw-bold">Pilih Peserta (Anggota DPRD / Pendamping) <span class="text-danger">*</span></label>
-              <select class="form-select select2-peserta" name="penerima_id" id="penerimaSelect" required>
-                <option value="">-- Pilih Anggota DPRD / Pendamping --</option>
+              <label class="form-label small fw-bold">Pilih Peserta (Anggota DPRD / ASN Pendamping) <span class="text-danger">*</span></label>
+              <select class="form-select select2-peserta" name="penerima_id" id="penerimaSelect" required <?= !empty($is_own_scope) ? 'data-own-only="1"' : '' ?>>
+                <option value="">-- Pilih Anggota DPRD / ASN Pendamping --</option>
                 <optgroup label="Anggota DPRD">
                   <?php foreach($penerima as $p): ?>
-                    <?php if($p['tipe'] === 'DPRD'): ?>
+                    <?php if($p['tipe'] === 'DPRD' && empty($is_own_scope)): ?>
                     <option value="<?= encrypt_id($p['id']) ?>" data-tipe="DPRD">
                       <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'Anggota') ?> (DPRD)
                     </option>
                     <?php endif; ?>
                   <?php endforeach; ?>
                 </optgroup>
-                <optgroup label="Pendamping / Pegawai">
+                <optgroup label="Pendamping / ASN">
                   <?php foreach($penerima as $p): ?>
-                    <?php if($p['tipe'] !== 'DPRD'): ?>
+                    <?php if($p['tipe'] !== 'DPRD' && (!$is_own_scope || (int)$p['id'] === (int)($currentUser['penerima_id'] ?? 0))): ?>
                     <option value="<?= encrypt_id($p['id']) ?>" data-tipe="PENDAMPING">
-                      <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'Pendamping') ?> (PENDAMPING)
+                      <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'ASN Pendamping') ?> (PENDAMPING)
                     </option>
                     <?php endif; ?>
                   <?php endforeach; ?>
@@ -379,37 +382,28 @@
               </select>
             </div>
 
-            <!-- Pos Anggaran DPRD (Terkunci ke Orang) -->
-            <div class="col-12 col-md-6" id="boxPosDprd" style="display: none;">
-              <label class="form-label small fw-bold">Pos Anggaran yang Dibebani</label>
-              <div class="p-2 border rounded bg-white">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge text-bg-primary">DPRD</span>
-                  <strong class="text-dark" id="txtNamaPosDprd">-</strong>
-                  <span class="badge text-bg-light border text-muted ms-auto" title="Anggota DPRD selalu memakai pos miliknya sendiri dan tidak bisa dialihkan">
-                    <i class="bi bi-lock-fill me-1"></i>Pos Melekat
-                  </span>
-                </div>
-                <div class="small text-muted mt-1" id="txtSaldoPosDprd">Memuat saldo...</div>
-              </div>
-            </div>
-
-            <!-- Pos Anggaran PENDAMPING (Bisa Dipilih / Dialihkan) -->
-            <div class="col-12 col-md-6" id="boxPosPendamping" style="display: none;">
-              <label class="form-label small fw-bold">Pos Anggaran yang Dibebani <span class="text-danger">*</span></label>
-              <select class="form-select" name="pos_anggaran_id" id="posPendampingSelect">
-                <option value="">-- Pilih Pos Jabatan Pendamping --</option>
-                <?php foreach($pos_pendamping as $pp): ?>
-                <option value="<?= encrypt_id($pp['id']) ?>"
-                        data-pemegang-id="<?= $pp['penugasan_penerima_id'] ?>"
-                        data-pemegang-nama="<?= html_escape($pp['pemegang_nama'] ?? '-') ?>"
-                        data-sisa="<?= (float)$pp['sisa'] ?>">
-                  <?= html_escape($pp['nama']) ?> (Sisa: <?= rupiah($pp['sisa']) ?>, Pemegang: <?= html_escape($pp['pemegang_nama'] ?? 'Kosong') ?>)
-                </option>
+            <!-- Anggaran yang digunakan peserta -->
+            <div class="col-12 col-md-6" id="boxPosAnggaran" style="display: none;">
+              <label class="form-label small fw-bold">Anggaran yang Dipakai <span class="text-danger">*</span></label>
+              <select class="form-select" name="pos_anggaran_id" id="posAnggaranSelect">
+                <option value="">-- Pilih Pos Anggaran --</option>
+                <?php foreach(array('DPRD', 'PENDAMPING') as $tipePos): ?>
+                  <optgroup label="<?= $tipePos === 'DPRD' ? 'Anggaran DPRD' : 'Anggaran Pendamping / Jabatan' ?>">
+                    <?php foreach($pos_anggaran as $pp): if($pp['tipe'] !== $tipePos) continue; ?>
+                    <option value="<?= encrypt_id($pp['id']) ?>"
+                            data-pemegang-id="<?= $pp['penugasan_penerima_id'] ?>"
+                            data-pemegang-nama="<?= html_escape($pp['pemegang_nama'] ?? '-') ?>"
+                            data-pos-nama="<?= html_escape($pp['nama']) ?>"
+                            data-pos-tipe="<?= html_escape($pp['tipe']) ?>"
+                            data-sisa="<?= (float)$pp['sisa'] ?>">
+                      <?= html_escape($pp['nama']) ?> (Sisa: <?= rupiah($pp['sisa']) ?>, Pemegang: <?= html_escape($pp['pemegang_nama'] ?? 'Melekat') ?>)
+                    </option>
+                    <?php endforeach; ?>
+                  </optgroup>
                 <?php endforeach; ?>
               </select>
-              <div class="form-text small text-muted" id="hintPosPendamping">
-                Secara default membebankan ke pos jabatan aktif pemegang. Boleh dialihkan ke pos lain jika berhalangan.
+              <div class="form-text small text-muted" id="hintPosAnggaran">
+                Default mengikuti anggaran bawaan peserta. Pendamping dapat memakai anggaran DPRD jika dipilih.
               </div>
             </div>
 
@@ -483,7 +477,8 @@ $(function(){
   function createBiayaRow(jenisId, volume, tarif) {
     var opts = '<option value="">— Tanpa jenis biaya (Biaya Umum) —</option>';
     (window.MasterJenisBiaya || []).forEach(function(j){
-      opts += '<option value="' + j.id + '" ' + (String(j.id) === String(jenisId) ? 'selected' : '') + '>' + escapeHtml(j.nama) + '</option>';
+      if (!j.tampil_di_kegiatan && String(j.id) !== String(jenisId)) return;
+      opts += '<option value="' + j.id + '" data-keterangan="' + escapeHtml(j.keterangan || '') + '" ' + (String(j.id) === String(jenisId) ? 'selected' : '') + '>' + escapeHtml(j.nama) + '</option>';
     });
 
     var vol = volume || 1;
@@ -495,6 +490,7 @@ $(function(){
         '<td>' +
           '<select class="form-select form-select-sm row-jenis">' + opts + '</select>' +
           '<div class="form-text small text-muted" style="font-size:0.7rem">Opsional</div>' +
+          '<div class="row-jenis-keterangan small text-muted fst-italic mt-1"></div>' +
         '</td>' +
         '<td>' +
           '<input type="number" step="0.01" min="0" class="form-control form-control-sm text-center row-volume" value="' + vol + '">' +
@@ -513,8 +509,15 @@ $(function(){
         '</td>' +
       '</tr>'
     );
+    var selectedOpt = rowHtml.find('.row-jenis option:selected');
+    rowHtml.find('.row-jenis-keterangan').text(selectedOpt.data('keterangan') || '');
     return rowHtml;
   }
+
+  $(document).on('change', '.row-jenis', function(){
+    var keterangan = $(this).find('option:selected').data('keterangan') || '';
+    $(this).closest('td').find('.row-jenis-keterangan').text(keterangan);
+  });
 
   function hitungTotalModal() {
     var total = 0;
@@ -529,7 +532,12 @@ $(function(){
   }
 
   var defaultPosId = '';
+  var defaultPosNama = '';
   var currentTipePeserta = '';
+
+  function normalizePosName(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
 
   function hideAlasanPengalihan(clearValue) {
     $('#boxAlasanPengalihan').hide();
@@ -549,58 +557,41 @@ $(function(){
     currentTipePeserta = tipe || '';
 
     if (!penerimaId) {
-      $('#boxPosDprd').hide();
-      $('#boxPosPendamping').hide();
+      $('#boxPosAnggaran').hide();
       hideAlasanPengalihan();
       return;
     }
 
-    if (tipe === 'DPRD') {
-      $('#boxPosPendamping').hide();
-      hideAlasanPengalihan();
-      $('#boxPosDprd').show();
-      $('#txtNamaPosDprd').text(opt.text().split('—')[0].trim());
-      $('#txtSaldoPosDprd').text('Memuat saldo pos...');
-
-      App.ajax({
-        url: window.APP.baseUrl + 'pos/pos_default?penerima_id=' + penerimaId + '&tahun_id=<?= (int)$kegiatan['tahun_anggaran_id'] ?>',
-        method: 'GET'
-      }).done(function(res){
-        if (res.data && res.data.saldo) {
-          $('#txtSaldoPosDprd').html('Pagu: <strong>' + formatRupiah(res.data.saldo.pagu) + '</strong> &bull; Sisa: <strong class="text-success">' + formatRupiah(res.data.saldo.sisa) + '</strong>');
+    $('#boxPosAnggaran').show();
+    App.ajax({
+      url: window.APP.baseUrl + 'pos/pos_default?penerima_id=' + penerimaId + '&tahun_id=<?= (int)$kegiatan['tahun_anggaran_id'] ?>',
+      method: 'GET'
+    }).done(function(res){
+      if (res.data && res.data.pos) {
+        defaultPosId = res.data.pos.id_enc;
+        defaultPosNama = normalizePosName(res.data.pos.nama);
+        if (!$('#posAnggaranSelect').val() || $('#posAnggaranSelect').val() === defaultPosId) {
+          $('#posAnggaranSelect').val(defaultPosId).trigger('change');
         } else {
-          $('#txtSaldoPosDprd').text('Pos terdaftar');
-        }
-      });
-    } else {
-      $('#boxPosDprd').hide();
-      $('#boxPosPendamping').show();
-
-      App.ajax({
-        url: window.APP.baseUrl + 'pos/pos_default?penerima_id=' + penerimaId + '&tahun_id=<?= (int)$kegiatan['tahun_anggaran_id'] ?>',
-        method: 'GET'
-      }).done(function(res){
-        if (res.data && res.data.pos) {
-          defaultPosId = res.data.pos.id_enc;
-          if (!$('#posPendampingSelect').val() || $('#posPendampingSelect').val() === defaultPosId) {
-            $('#posPendampingSelect').val(defaultPosId).trigger('change');
-          }
-          checkPengalihanPos();
-        } else {
-          defaultPosId = '';
           checkPengalihanPos();
         }
-      });
-    }
+      } else {
+        defaultPosId = '';
+        defaultPosNama = '';
+        checkPengalihanPos();
+      }
+    });
   }
 
   function checkPengalihanPos() {
-    if (currentTipePeserta !== 'PENDAMPING') {
+    if (!currentTipePeserta) {
       hideAlasanPengalihan();
       return;
     }
-    var selectedPos = $('#posPendampingSelect').val();
-    if (defaultPosId && selectedPos && selectedPos !== defaultPosId) {
+    var selectedPos = $('#posAnggaranSelect').val();
+    var selectedPosNama = normalizePosName($('#posAnggaranSelect').find(':selected').data('pos-nama'));
+    var satuKelompokJabatan = defaultPosNama && selectedPosNama && defaultPosNama === selectedPosNama;
+    if (defaultPosId && selectedPos && selectedPos !== defaultPosId && !satuKelompokJabatan) {
       showAlasanPengalihan();
     } else {
       $('#boxAlasanPengalihan').stop(true, true).slideUp(200);
@@ -609,7 +600,7 @@ $(function(){
   }
 
   $('#penerimaSelect').on('change', handlePenerimaChange);
-  $('#posPendampingSelect').on('change', checkPengalihanPos);
+  $('#posAnggaranSelect').on('change', checkPengalihanPos);
 
   // Inisialisasi Select2 pada dropdown modal saat ditampilkan
   $('#modalPeserta').on('shown.bs.modal', function(){
@@ -617,12 +608,12 @@ $(function(){
       $('#penerimaSelect').select2({
         dropdownParent: $('#modalPeserta'),
         width: '100%',
-        placeholder: '-- Pilih Anggota DPRD / Pendamping --'
+        placeholder: '-- Pilih Anggota DPRD / ASN Pendamping --'
       });
-      $('#posPendampingSelect').select2({
+      $('#posAnggaranSelect').select2({
         dropdownParent: $('#modalPeserta'),
         width: '100%',
-        placeholder: '-- Pilih Pos Jabatan Pendamping --'
+        placeholder: '-- Pilih Pos Anggaran --'
       });
     }
   });
@@ -632,15 +623,15 @@ $(function(){
     $('#formPeserta')[0].reset();
     $('#pesertaIdInput').val('');
     defaultPosId = '';
+    defaultPosNama = '';
     currentTipePeserta = '';
-    $('#boxPosDprd').hide();
-    $('#boxPosPendamping').hide();
+    $('#boxPosAnggaran').hide();
     hideAlasanPengalihan();
     if ($.fn.select2 && $('#penerimaSelect').hasClass("select2-hidden-accessible")) {
       $('#penerimaSelect').val('').trigger('change');
     }
-    if ($.fn.select2 && $('#posPendampingSelect').hasClass("select2-hidden-accessible")) {
-      $('#posPendampingSelect').val('').trigger('change');
+    if ($.fn.select2 && $('#posAnggaranSelect').hasClass("select2-hidden-accessible")) {
+      $('#posAnggaranSelect').val('').trigger('change');
     }
     $('#modalPesertaTitle').html('<i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Peserta / Pendamping');
     $('#tbodyBiayaRows').empty();
@@ -662,12 +653,11 @@ $(function(){
     }
 
     if (p.tipe === 'PENDAMPING') {
-      $('#boxPosDprd').hide();
-      $('#boxPosPendamping').show();
+      $('#boxPosAnggaran').show();
       if (p.pos_anggaran_id) {
-        $('#posPendampingSelect').val(p.pos_anggaran_id);
-        if ($.fn.select2 && $('#posPendampingSelect').hasClass("select2-hidden-accessible")) {
-          $('#posPendampingSelect').trigger('change');
+        $('#posAnggaranSelect').val(p.pos_anggaran_id);
+        if ($.fn.select2 && $('#posAnggaranSelect').hasClass("select2-hidden-accessible")) {
+          $('#posAnggaranSelect').trigger('change');
         }
       }
       if (p.alasan_pengalihan) {
@@ -675,10 +665,8 @@ $(function(){
         showAlasanPengalihan();
       }
     } else {
-      $('#boxPosPendamping').hide();
+      $('#boxPosAnggaran').show();
       hideAlasanPengalihan();
-      $('#boxPosDprd').show();
-      $('#txtNamaPosDprd').text(p.nama);
     }
 
     $('#modalPesertaTitle').html('<i class="bi bi-pencil-square text-primary me-1"></i> Edit Peserta: ' + escapeHtml(p.nama));
@@ -745,11 +733,12 @@ $(function(){
       }
     });
 
-    var isPendamping = currentTipePeserta === 'PENDAMPING';
-    var posId = isPendamping ? ($('#posPendampingSelect').val() || null) : null;
-    var alasan = isPendamping ? ($('#inpAlasanPengalihan').val() || null) : null;
+    var posId = $('#posAnggaranSelect').val() || null;
+    var alasan = $('#inpAlasanPengalihan').val() || null;
 
-    if (isPendamping && defaultPosId && posId && posId !== defaultPosId && !alasan) {
+    var selectedPosNamaSaatSimpan = normalizePosName($('#posAnggaranSelect').find(':selected').data('pos-nama'));
+    var satuKelompokSaatSimpan = defaultPosNama && selectedPosNamaSaatSimpan && defaultPosNama === selectedPosNamaSaatSimpan;
+    if (defaultPosId && posId && posId !== defaultPosId && !satuKelompokSaatSimpan && !alasan) {
       App.toast('Alasan pengalihan pos anggaran wajib diisi saat memilih pos lain.', 'warning');
       $('#inpAlasanPengalihan').focus();
       return;

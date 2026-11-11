@@ -101,7 +101,7 @@
         <?php endif; ?>
 
         <?php if(can('penerima.view')): ?>
-        <a class="nav-link <?= ($cClass === 'penerima') ? 'active' : '' ?>" href="<?= site_url('penerima') ?>">
+        <a class="nav-link <?= ($cClass === 'penerima' && $this->uri->segment(2) !== 'pendamping') ? 'active' : '' ?>" href="<?= site_url('penerima') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-people"></i>
           <span class="menu-title">Penerima</span>

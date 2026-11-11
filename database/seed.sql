@@ -3,7 +3,7 @@
 -- DATA SEED AWAL BERSIH (CLEAN SEED - HANYA AKUN ADMINISTRATOR)
 -- =============================================================================
 
-USE `anggaran_dprd`;
+-- Pilih database tujuan terlebih dahulu di phpMyAdmin/cPanel.
 
 -- Password default untuk akun administrator: admin123
 SET @password_default = '$2y$10$nZPUGsK/.d9Z1bafYrSlFOgeMlEGx9Yvk/bMD0YT7.3QAw/g96KYK';
@@ -17,7 +17,7 @@ INSERT INTO `roles` (`kode`, `nama`, `keterangan`, `is_system`, `aktif`) VALUES
 ('PPTK',       'PPTK', 'Verifikator kegiatan dan pengendalian realisasi anggaran', 1, 1),
 ('OPERATOR',   'Operator', 'Input data kegiatan dan pengajuan verifikasi', 1, 1),
 ('PIMPINAN',   'Pimpinan DPRD', 'Monitoring dashboard realisasi dan laporan eksekutif', 1, 1),
-('PENDAMPING', 'Pendamping', 'Akses ke kegiatan dan pos anggaran yang ditugaskan', 1, 1),
+('PENDAMPING', 'Pendamping', 'Input kegiatan sendiri sampai mencetak bukti perjalanan dinas', 1, 1),
 ('DPRD',       'Anggota DPRD', 'Akses ke kegiatan dan pagu anggaran milik sendiri', 1, 1),
 ('VIEWER',     'Viewer', 'Akses hanya melihat data laporan', 1, 1)
 ON DUPLICATE KEY UPDATE 
@@ -137,7 +137,7 @@ INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.kode IN (
   'dashboard.view_own',
   'anggaran.view_own',
-  'kegiatan.view_own', 'kegiatan.ajukan',
+  'kegiatan.view_own', 'kegiatan.create', 'kegiatan.update', 'kegiatan.ajukan',
   'laporan.view_own', 'laporan.export'
 ) WHERE r.kode = 'PENDAMPING';
 
@@ -245,18 +245,6 @@ INSERT INTO `tahun_anggaran` (`id`, `tahun`, `is_locked`)
 VALUES (1, 2026, 0)
 ON DUPLICATE KEY UPDATE `tahun` = 2026, `is_locked` = 0;
 
--- 8 Pos Baku Pendamping (Pagu 0, Pemegang Ditugaskan Nanti)
-INSERT INTO `pos_anggaran` (`tahun_anggaran_id`, `kode`, `nama`, `tipe`, `penerima_id`, `pagu`, `kelompok_jabatan`, `urutan`, `is_active`) VALUES
-(1, 'POS-AJUDAN-KTU', 'Ajudan Ketua DPRD',                  'PENDAMPING', NULL, 0, NULL, 1, 1),
-(1, 'POS-AJUDAN-WK1', 'Ajudan Wakil Ketua I',               'PENDAMPING', NULL, 0, NULL, 2, 1),
-(1, 'POS-AJUDAN-WK2', 'Ajudan Wakil Ketua II',              'PENDAMPING', NULL, 0, NULL, 3, 1),
-(1, 'POS-AJUDAN-WK3', 'Ajudan Wakil Ketua III',             'PENDAMPING', NULL, 0, NULL, 4, 1),
-(1, 'POS-SEKRETARIS', 'Sekretaris DPRD',                    'PENDAMPING', NULL, 0, NULL, 5, 1),
-(1, 'POS-KABAG',      'Kepala Bagian Umum',                 'PENDAMPING', NULL, 0, NULL, 6, 1),
-(1, 'POS-KASUBAG',    'Ka. Sub Bag Perjalanan Dinas',        'PENDAMPING', NULL, 0, NULL, 7, 1),
-(1, 'POS-STAF-ADM',   'Staf Administrasi Perjalanan Dinas', 'PENDAMPING', NULL, 0, NULL, 8, 1)
-ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `tipe` = 'PENDAMPING';
-
 -- CATATAN:
 -- Tabel 'penerima' (DPRD & Pendamping) KOSONG
 -- Tabel 'kegiatan' KOSONG
@@ -264,5 +252,7 @@ ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `tipe` = 'PENDAMPING';
 -- Tabel 'kegiatan_biaya' KOSONG
 -- Tabel 'anggaran' KOSONG
 -- Tabel 'penugasan_pos' KOSONG
--- Administrator dapat mulai testing input data penerima, penugasan pos, pagu, dan kegiatan dari awal layaknya instalasi baru.
+-- Administrator dapat mulai testing dari awal.
+-- Jalankan database/inject_anggota_dprd_2024_2029.sql bila ingin memasukkan
+-- 34 anggota DPRD beserta pagu dan pos anggarannya.
 

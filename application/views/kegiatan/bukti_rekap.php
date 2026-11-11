@@ -147,7 +147,10 @@
     </div>
 
     <!-- Kolom Tanda Tangan Pengesahan Dinamis -->
-    <?php $this->load->view('layout/tanda_tangan', array('tanggal' => $kegiatan['tanggal_input'] ?? date('Y-m-d'))); ?>
+    <?php $this->load->view('layout/tanda_tangan', array(
+      'tanggal' => $kegiatan['tanggal_input'] ?? date('Y-m-d'),
+      'kolom' => 2,
+    )); ?>
 
   </div>
 </div>

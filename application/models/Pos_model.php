@@ -5,7 +5,7 @@
  *
  * Mengelola "Pos Anggaran" – unit pemilik pagu, dipisah dari orang.
  * - DPRD    : 1 penerima = 1 pos (penerima_id tetap, tidak bisa dialihkan)
- * - PENDAMPING: pos jabatan baku (8 pos), pemegang bisa berganti via penugasan_pos
+ * - PENDAMPING: pos jabatan baku (8 pos), satu pos dapat memiliki beberapa pemegang via penugasan_pos
  */
 class Pos_model extends CI_Model {
 
@@ -84,13 +84,13 @@ class Pos_model extends CI_Model {
                 pa.penerima_id,
                 pa.pagu,
                 pa.kelompok_jabatan,
-                COALESCE(SUM(kb.volume * kb.tarif), 0) AS realisasi,
-                pa.pagu - COALESCE(SUM(kb.volume * kb.tarif), 0) AS sisa
+                COALESCE(SUM(CASE WHEN k.status = 'AKTIF' THEN kb.volume * kb.tarif ELSE 0 END), 0) AS realisasi,
+                pa.pagu - COALESCE(SUM(CASE WHEN k.status = 'AKTIF' THEN kb.volume * kb.tarif ELSE 0 END), 0) AS sisa
             FROM pos_anggaran pa
             LEFT JOIN kegiatan_peserta kp ON kp.pos_anggaran_id = pa.id
             LEFT JOIN kegiatan_biaya kb   ON kb.kegiatan_peserta_id = kp.id
             LEFT JOIN kegiatan k          ON k.id = kp.kegiatan_id
-                                          AND k.status NOT IN ('BATAL')
+                                          AND k.status = 'AKTIF'
             GROUP BY pa.id;
         ");
     }
@@ -103,11 +103,11 @@ class Pos_model extends CI_Model {
     public function all_by_tahun(int $tahunId, ?string $tipe = null): array {
         $this->db
             ->select('sp.*, ta.tahun,
-                      COALESCE(pen.nama, "-") AS pemegang_nama,
-                      COALESCE(pen.jabatan, "-") AS pemegang_jabatan,
-                      pp.id AS penugasan_id,
-                      pp.penerima_id AS penugasan_penerima_id,
-                      pp.tanggal_mulai AS penugasan_mulai', FALSE)
+                      COALESCE(GROUP_CONCAT(DISTINCT pen.nama ORDER BY pen.nama SEPARATOR ", "), "-") AS pemegang_nama,
+                      COALESCE(GROUP_CONCAT(DISTINCT pen.jabatan ORDER BY pen.jabatan SEPARATOR ", "), "-") AS pemegang_jabatan,
+                      MIN(pp.id) AS penugasan_id,
+                      MIN(pp.penerima_id) AS penugasan_penerima_id,
+                      MIN(pp.tanggal_mulai) AS penugasan_mulai', FALSE)
             ->from('pos_anggaran sp')
             ->join('tahun_anggaran ta', 'ta.id = sp.tahun_anggaran_id')
             // Untuk DPRD: langsung join penerima via penerima_id
@@ -122,6 +122,7 @@ class Pos_model extends CI_Model {
         if ($tipe) $this->db->where('sp.tipe', $tipe);
 
         return $this->db
+            ->group_by('sp.id')
             ->order_by('sp.tipe', 'ASC')
             ->order_by('sp.urutan', 'ASC')
             ->order_by('sp.nama', 'ASC')
@@ -222,18 +223,20 @@ class Pos_model extends CI_Model {
 
     /**
      * Buat 8 pos baku PENDAMPING untuk satu tahun.
+     * Satu pos mewakili satu kelompok jabatan dan dapat memiliki beberapa
+     * pemegang aktif dengan satu pagu bersama.
      * Idempotent – aman dijalankan berulang.
      */
     public function buat_pos_pendamping_baku(int $tahunId): int {
         $posBaku = [
-            ['kode' => 'POS-AJUDAN-KTU', 'nama' => 'Ajudan Ketua DPRD',                  'urutan' => 1],
-            ['kode' => 'POS-AJUDAN-WK1', 'nama' => 'Ajudan Wakil Ketua I',               'urutan' => 2],
-            ['kode' => 'POS-AJUDAN-WK2', 'nama' => 'Ajudan Wakil Ketua II',              'urutan' => 3],
-            ['kode' => 'POS-AJUDAN-WK3', 'nama' => 'Ajudan Wakil Ketua III',             'urutan' => 4],
-            ['kode' => 'POS-SEKRETARIS', 'nama' => 'Sekretaris DPRD',                    'urutan' => 5],
-            ['kode' => 'POS-KABAG',      'nama' => 'Kepala Bagian Umum',                 'urutan' => 6],
-            ['kode' => 'POS-KASUBAG',    'nama' => 'Ka. Sub Bag Perjalanan Dinas',        'urutan' => 7],
-            ['kode' => 'POS-STAF-ADM',   'nama' => 'Staf Administrasi Perjalanan Dinas', 'urutan' => 8],
+            ['kode' => 'POS-AJUDAN-KTU',    'nama' => 'Ajudan Ketua DPRD',     'urutan' => 1],
+            ['kode' => 'POS-AJUDAN-WK1',    'nama' => 'Ajudan Wakil Ketua I',  'urutan' => 2],
+            ['kode' => 'POS-AJUDAN-WK2',    'nama' => 'Ajudan Wakil Ketua II', 'urutan' => 3],
+            ['kode' => 'POS-NOTULEN-KOM1',  'nama' => 'Notulen Komisi I',      'urutan' => 4],
+            ['kode' => 'POS-NOTULEN-KOM2',  'nama' => 'Notulen Komisi II',     'urutan' => 5],
+            ['kode' => 'POS-NOTULEN-KOM3',  'nama' => 'Notulen Komisi III',    'urutan' => 6],
+            ['kode' => 'POS-NOTULEN-SEK',   'nama' => 'Notulen Sekretariat',   'urutan' => 7],
+            ['kode' => 'POS-SEKRETARIAT',   'nama' => 'Sekretariat',            'urutan' => 8],
         ];
 
         $created = 0;
@@ -361,14 +364,21 @@ class Pos_model extends CI_Model {
     }
 
     /**
-     * Simpan penugasan baru (mengganti pemegang pos pendamping)
+     * Simpan pemegang baru pada pos pendamping bersama.
+     * Pemegang aktif lain tetap dipertahankan karena satu pos dapat
+     * digunakan oleh beberapa orang dengan satu pagu bersama.
      */
     public function simpan_penugasan(int $posId, int $penerimaId, string $tanggalMulai, ?string $keterangan = null, ?int $dibuatOleh = null): int {
-        // Tutup penugasan aktif lama terlebih dahulu
-        $kemarin = date('Y-m-d', strtotime($tanggalMulai . ' -1 day'));
-        $this->tutup_penugasan($posId, $kemarin);
+        $existing = $this->db
+            ->where('pos_anggaran_id', $posId)
+            ->where('penerima_id', $penerimaId)
+            ->where('tanggal_selesai IS NULL', null, false)
+            ->order_by('id', 'DESC')
+            ->limit(1)
+            ->get('penugasan_pos')->row_array();
+        if ($existing) return (int)$existing['id'];
 
-        // Buat penugasan baru
+        // Tambahkan pemegang baru tanpa menutup pemegang lain.
         $this->db->insert('penugasan_pos', [
             'pos_anggaran_id' => $posId,
             'penerima_id'     => $penerimaId,

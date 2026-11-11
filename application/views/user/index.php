@@ -1,10 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <p class="text-muted mb-0">Kelola akun pengguna sistem dan tautan penerima pendamping.</p>
+  <p class="text-muted mb-0">Kelola akun, role, dan akses pengguna sistem.</p>
   <div class="d-flex gap-2">
-    <button class="btn btn-outline-primary d-flex align-items-center gap-1" id="massPendamping">
-      <i class="bi bi-people"></i>
-      <span>Buat Akun Pendamping</span>
-    </button>
     <button class="btn btn-primary d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#dataModal">
       <i class="bi bi-person-plus"></i>
       <span>Tambah Pengguna</span>
@@ -21,7 +17,7 @@
             <th>Nama Lengkap</th>
             <th>Username</th>
             <th>Role</th>
-            <th>Tautan Penerima</th>
+            <th>Identitas Kegiatan</th>
             <th style="width: 120px;">Status</th>
             <?php if($can_reset_password): ?>
             <th style="width: 170px;" class="text-end">Aksi</th>
@@ -55,13 +51,11 @@
             <option value="<?= encrypt_id($role['id']) ?>"><?= html_escape($role['nama']) ?></option>
             <?php endforeach; ?>
           </select>
-          <label class="form-label small fw-semibold">Tautan Penerima (Khusus Pendamping)</label>
-          <select class="form-select mb-3" name="penerima_id">
-            <option value="">Tanpa penerima</option>
-            <?php foreach($pendamping as $person): ?>
-            <option value="<?= encrypt_id($person['id']) ?>"><?= html_escape($person['nama']) ?></option>
-            <?php endforeach; ?>
-          </select>
+          <div id="pendampingIdentityFields" class="d-none">
+            <label class="form-label small fw-semibold">Jabatan Pendamping</label>
+            <input class="form-control mb-3" name="jabatan" id="inpJabatanPendamping" placeholder="Contoh: Ajudan Ketua DPRD">
+            <div class="form-text mt-n2 mb-3">Identitas kegiatan dibuat otomatis dari akun ini.</div>
+          </div>
           <label class="form-label small fw-semibold">Status Keaktifan</label>
           <select class="form-select" name="is_active">
             <option value="1">Aktif</option>
@@ -121,16 +115,17 @@ $(function(){
     });
   });
 
-  $('#massPendamping').on('click', function(){
-    App.ajax({url: window.APP.baseUrl + 'user/mass_pendamping'}).done(function(r){
-      if(r.data && r.data.accounts) {
-        Swal.fire({
-          title: 'Daftar Akun Pendamping Baru',
-          html: '<pre class="text-start bg-light p-3 rounded" style="font-size: 0.85rem;">' + r.data.accounts.map(function(x){ return x.username + ' : ' + x.password; }).join('\n') + '</pre>',
-          width: 600
-        });
-      }
-    });
+  function togglePendampingIdentity(){
+    var selected = $('select[name="role_id"] option:selected').text().toLowerCase();
+    var isPendamping = selected.indexOf('pendamping') !== -1;
+    $('#pendampingIdentityFields').toggleClass('d-none', !isPendamping);
+    $('#inpJabatanPendamping').prop('required', isPendamping);
+  }
+  $('select[name="role_id"]').on('change', togglePendampingIdentity);
+  $('#dataModal').on('shown.bs.modal', togglePendampingIdentity);
+  $('#dataModal').on('hidden.bs.modal', function(){
+    $('#pendampingIdentityFields').addClass('d-none');
+    $('#inpJabatanPendamping').prop('required', false).val('');
   });
 });
 </script>

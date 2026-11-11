@@ -8,13 +8,20 @@ class Penerima extends MY_Controller {
     }
 
     public function index(): void {
+        // Pendamping dikelola sebagai user ber-role PENDAMPING. Menu ini
+        // khusus untuk master anggota DPRD.
+        $this->render_index('DPRD');
+    }
+
+    private function render_index(?string $filterTipe): void {
         $this->require_permission('penerima.view');
         $this->load->view('layout/main', array(
-            'title' => 'Penerima',
+            'title' => 'Anggota DPRD',
             'view'  => 'penerima/index',
             'data'  => array(
-                'rows'       => array(),
-                'can_manage' => can('penerima.manage'),
+                'rows'         => array(),
+                'can_manage'   => can('penerima.manage'),
+                'filter_tipe'  => $filterTipe,
             )
         ));
     }
@@ -22,24 +29,22 @@ class Penerima extends MY_Controller {
     public function data(): void {
         $this->require_permission('penerima.view');
         $canManage = can('penerima.manage');
+        $filterTipe = 'DPRD';
 
-        $columnMap = array(
-            0 => 'nama',
-            1 => 'tipe',
-            2 => 'jabatan',
-            3 => 'periode_mulai',
-            4 => 'is_active',
-        );
+        $columnMap = $filterTipe
+            ? array(0 => 'nama', 1 => 'jabatan', 2 => 'periode_mulai', 3 => 'is_active')
+            : array(0 => 'nama', 1 => 'tipe', 2 => 'jabatan', 3 => 'periode_mulai', 4 => 'is_active');
 
         $params = $this->dt_params($columnMap, 'nama', 'ASC');
-        $recordsTotal = $this->Penerima_model->count_all();
-        $recordsFiltered = $this->Penerima_model->count_filtered($params['search']);
+        $recordsTotal = $this->Penerima_model->count_all($filterTipe);
+        $recordsFiltered = $this->Penerima_model->count_filtered($params['search'], $filterTipe);
         $rows = $this->Penerima_model->get_datatable(
             $params['start'],
             $params['length'],
             $params['search'],
             $params['order_column'],
-            $params['order_dir']
+            $params['order_dir'],
+            $filterTipe
         );
 
         $data = array();
@@ -65,13 +70,11 @@ class Penerima extends MY_Controller {
             $statusLabel = $row['is_active'] ? 'Aktif' : 'Nonaktif';
             $statusHtml = '<span class="badge text-bg-' . $statusBadge . '">' . $statusLabel . '</span>';
 
-            $rowArr = array(
-                $namaHtml,
-                $tipeHtml,
-                $jabatanHtml,
-                $periodeHtml,
-                $statusHtml
-            );
+            $rowArr = array($namaHtml);
+            if (!$filterTipe) $rowArr[] = $tipeHtml;
+            $rowArr[] = $jabatanHtml;
+            $rowArr[] = $periodeHtml;
+            $rowArr[] = $statusHtml;
 
             if ($canManage) {
                 $rowArr[] = '<div class="text-end">'
@@ -90,7 +93,7 @@ class Penerima extends MY_Controller {
         $id   = decrypt_id($this->input->post('id'));
         $data = array(
             'nama'          => $this->input->post('nama', TRUE),
-            'tipe'          => $this->input->post('tipe', TRUE),
+            'tipe'          => 'DPRD',
             'jabatan'       => $this->input->post('jabatan', TRUE),
             'periode_mulai' => $this->input->post('periode_mulai') ? (int)$this->input->post('periode_mulai') : NULL,
             'periode_akhir' => $this->input->post('periode_akhir') ? (int)$this->input->post('periode_akhir') : NULL,

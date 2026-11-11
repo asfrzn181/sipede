@@ -11,9 +11,10 @@
 
 1. Buat database dan user MySQL di cPanel. Gunakan nama lengkap dengan prefix akun.
 2. Buka phpMyAdmin dan klik database tersebut di panel kiri.
-3. Import `database/schema_full.sql`.
-4. Import `database/seed_full.sql` pada database yang sama.
-5. Jangan menaruh folder `database/` di document root publik.
+3. Import `database/schema.sql`.
+4. Import `database/seed.sql` pada database yang sama.
+5. Jika ingin memasukkan data anggota DPRD, import `database/inject_anggota_dprd_2024_2029.sql` setelah seed.
+6. Jangan menaruh folder `database/` di document root publik.
 
 ## Konfigurasi aplikasi
 

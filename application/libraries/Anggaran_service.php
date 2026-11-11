@@ -26,10 +26,14 @@ class Anggaran_service
         foreach ($peserta as $person) {
             $penerimaId = (int) ($person['penerima_id'] ?? 0);
             if (!empty($person['sumber_dana_id']) && !$this->ci->db->where(array('id'=>(int)$person['sumber_dana_id'],'is_active'=>1))->count_all_results('sumber_dana')) return $this->fail('Sumber dana peserta tidak ditemukan atau tidak aktif.');
-            // Pos Anggaran adalah sumber pagu utama. Tabel anggaran hanya
-            // menjadi fallback untuk data lama yang belum memiliki pos.
-            $budget = $this->find_pos_budget($year, $penerimaId);
-            if (!$budget) {
+            // Pos Anggaran yang dipilih menjadi sumber pagu utama. Jika belum
+            // dipilih, gunakan pos bawaan penerima sebagai default.
+            $requestedPosId = (int)($person['pos_anggaran_id'] ?? 0);
+            $budget = $requestedPosId
+                ? $this->ci->db->where(array('pos_anggaran_id' => $requestedPosId, 'tahun_anggaran_id' => $year))
+                    ->get('v_sisa_pos')->row_array()
+                : $this->find_pos_budget($year, $penerimaId);
+            if (!$budget && !$requestedPosId) {
                 $budget = $this->ci->db->query(
                     'SELECT * FROM v_sisa_anggaran WHERE tahun_anggaran_id = ? AND penerima_id = ?',
                     array($year, $penerimaId)

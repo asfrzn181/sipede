@@ -1,9 +1,11 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <p class="text-muted mb-0">Daftar Anggota DPRD dan jabatan khusus pendamping.</p>
+  <p class="text-muted mb-0">
+    Daftar Anggota DPRD dan jabatan/periode keanggotaan.
+  </p>
   <?php if($can_manage): ?>
   <button class="btn btn-primary d-flex align-items-center gap-1" id="btnTambahPenerima">
     <i class="bi bi-plus-lg"></i>
-    <span>Tambah Penerima</span>
+    <span>Tambah Anggota DPRD</span>
   </button>
   <?php endif; ?>
 </div>
@@ -15,7 +17,7 @@
         <thead class="table-light">
           <tr>
             <th>Nama Lengkap</th>
-            <th style="width: 90px;">Tipe</th>
+            <?php if(empty($filter_tipe)): ?><th style="width: 90px;">Tipe</th><?php endif; ?>
             <th>Jabatan</th>
             <th style="width: 140px;">Periode</th>
             <th style="width: 90px;">Status</th>
@@ -45,11 +47,7 @@
           <label class="form-label small fw-semibold">Nama Lengkap</label>
           <input class="form-control mb-3" name="nama" placeholder="Nama Lengkap &amp; Gelar" required>
 
-          <label class="form-label small fw-semibold">Tipe Penerima</label>
-          <select class="form-select mb-3" name="tipe" id="tipePenerima">
-            <option value="DPRD">DPRD</option>
-            <option value="PENDAMPING">PENDAMPING</option>
-          </select>
+          <input type="hidden" name="tipe" id="tipePenerima" value="DPRD">
 
           <label class="form-label small fw-semibold">Jabatan</label>
           <input class="form-control mb-3" name="jabatan" placeholder="Contoh: Ketua / Anggota / Pendamping Ahli">
@@ -92,28 +90,21 @@
 $(function(){
   var penerimaDT = window.createDataTableServerSide('#penerimaTable', {
     ajax: {
-      url: window.APP.baseUrl + 'penerima/data'
+      url: window.APP.baseUrl + 'penerima/data<?= !empty($filter_tipe) ? '?tipe=' . rawurlencode($filter_tipe) : '' ?>'
     },
     order: [[0, 'asc']],
     columnDefs: [
-      { targets: [1, 4], className: 'text-center' },
+      { targets: [<?= empty($filter_tipe) ? '1, ' : '' ?><?= empty($filter_tipe) ? '4' : '3' ?>], className: 'text-center' },
       <?php if($can_manage): ?>
-      { targets: 5, className: 'text-end', orderable: false }
+      { targets: <?= empty($filter_tipe) ? '5' : '4' ?>, className: 'text-end', orderable: false }
       <?php endif; ?>
     ]
   });
 
-  // Show/hide periode based on tipe
+  // Master ini khusus anggota DPRD; periode selalu ditampilkan.
   function togglePeriode() {
-    var tipe = $('#tipePenerima').val();
-    if (tipe === 'DPRD') {
-      $('#periodeSection').show();
-    } else {
-      $('#periodeSection').hide();
-      $('[name="periode_mulai"],[name="periode_akhir"]').val('');
-    }
+    $('#periodeSection').show();
   }
-  $('#tipePenerima').on('change', togglePeriode);
   togglePeriode();
 
   // Open modal for new entry

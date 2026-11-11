@@ -5,6 +5,10 @@ class Penerima_model extends CI_Model {
         return $this->db->order_by('tipe')->order_by('nama')->get('penerima')->result_array();
     }
 
+    public function all_active(): array {
+        return $this->db->where('is_active', 1)->order_by('tipe')->order_by('nama')->get('penerima')->result_array();
+    }
+
     public function all_by_tipe(string $tipe): array {
         return $this->db->where('tipe', $tipe)->where('is_active', 1)
             ->order_by('nama')->get('penerima')->result_array();
@@ -22,11 +26,13 @@ class Penerima_model extends CI_Model {
             ->get()->result_array();
     }
 
-    public function count_all(): int {
-        return (int)$this->db->count_all('penerima');
+    public function count_all(?string $tipe = null): int {
+        if ($tipe) $this->db->where('tipe', $tipe);
+        return (int)$this->db->count_all_results('penerima');
     }
 
-    public function count_filtered(string $search = ''): int {
+    public function count_filtered(string $search = '', ?string $tipe = null): int {
+        if ($tipe) $this->db->where('tipe', $tipe);
         if ($search !== '') {
             $this->db->group_start();
             $this->db->like('nama', $search);
@@ -37,7 +43,8 @@ class Penerima_model extends CI_Model {
         return (int)$this->db->count_all_results('penerima');
     }
 
-    public function get_datatable(int $start = 0, int $length = 10, string $search = '', string $orderCol = 'nama', string $orderDir = 'ASC'): array {
+    public function get_datatable(int $start = 0, int $length = 10, string $search = '', string $orderCol = 'nama', string $orderDir = 'ASC', ?string $tipe = null): array {
+        if ($tipe) $this->db->where('tipe', $tipe);
         if ($search !== '') {
             $this->db->group_start();
             $this->db->like('nama', $search);

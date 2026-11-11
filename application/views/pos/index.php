@@ -334,7 +334,7 @@
         <div class="modal-body p-4">
           <div class="alert alert-info small py-2 mb-3">
             <i class="bi bi-info-circle me-1"></i>
-            Pemegang lama akan otomatis ditutup penugasannya (per tanggal mulai &minus; 1 hari). Riwayat tersimpan lengkap.
+            Pos ini dapat memiliki beberapa pemegang dengan satu pagu bersama. Pemegang aktif lain tetap dipertahankan.
           </div>
           <!-- Pemegang Lama -->
           <div class="mb-3">
