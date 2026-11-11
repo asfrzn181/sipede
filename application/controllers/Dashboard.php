@@ -18,7 +18,7 @@ class Dashboard extends MY_Controller {
         }
 
         $this->load->view('layout/main', array(
-            'title' => 'Dashboard',
+            'title' => 'Dashboard Penyerapan Anggaran',
             'view'  => 'dashboard/index',
             'data'  => array('pos' => $pos, 'scope' => $scope)
         ));

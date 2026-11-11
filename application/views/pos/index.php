@@ -107,7 +107,7 @@
                 $kelClass = $kel === 'KETUA' ? 'danger' : ($kel === 'WAKIL_KETUA' ? 'warning' : 'secondary');
               ?>
               <tr>
-                <td class="fw-semibold"><?= html_escape($r['nama']) ?></td>
+                <td class="fw-semibold"><?= html_escape($r['nama']) ?><div class="small text-muted"><?= html_escape($r['jenis_anggaran_nama'] ?? 'Belum dikategorikan') ?></div></td>
                 <td><span class="badge text-bg-<?= $kelClass ?>"><?= html_escape($kel) ?></span></td>
                 <td class="small text-muted"><?= html_escape($r['pemegang_jabatan'] ?? '-') ?></td>
                 <td class="text-end fw-bold text-primary"><?= rupiah($pagu) ?></td>
@@ -117,6 +117,7 @@
                 </td>
                 <?php if($can_manage && !$isLocked): ?>
                 <td class="text-end">
+                  <button class="btn btn-sm btn-outline-secondary js-jenis-pos" data-pos-id="<?= $encPosId ?>" data-pos-nama="<?= html_escape($r['nama']) ?>" data-jenis-id="<?= (int)($r['jenis_anggaran_id'] ?? 0) ?>" title="Atur jenis anggaran"><i class="bi bi-tag"></i></button>
                   <button class="btn btn-sm btn-outline-warning js-revisi-pos"
                     data-pos-id="<?= $encPosId ?>"
                     data-pos-nama="<?= html_escape($r['nama']) ?>"
@@ -174,6 +175,7 @@
               <tr>
                 <td>
                   <div class="fw-semibold"><?= html_escape($r['nama']) ?></div>
+                  <div class="small text-muted"><?= html_escape($r['jenis_anggaran_nama'] ?? 'Belum dikategorikan') ?></div>
                   <code class="small text-muted"><?= html_escape($r['kode']) ?></code>
                 </td>
                 <td>
@@ -194,6 +196,7 @@
                 </td>
                 <?php if($can_manage && !$isLocked): ?>
                 <td class="text-end text-nowrap">
+                  <button class="btn btn-sm btn-outline-secondary js-jenis-pos" data-pos-id="<?= $encPosId ?>" data-pos-nama="<?= html_escape($r['nama']) ?>" data-jenis-id="<?= (int)($r['jenis_anggaran_id'] ?? 0) ?>" title="Atur jenis anggaran"><i class="bi bi-tag"></i></button>
                   <!-- Revisi Pagu -->
                   <button class="btn btn-sm btn-outline-warning js-revisi-pos"
                     data-pos-id="<?= $encPosId ?>"
@@ -228,6 +231,27 @@
     </div>
   </div>
 
+</div>
+
+<!-- Modal Jenis Anggaran Pos -->
+<div class="modal fade" id="modalJenisPos" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formJenisPos">
+        <input type="hidden" name="pos_id" id="jenisPosId">
+        <div class="modal-header bg-light"><h5 class="modal-title fw-bold"><i class="bi bi-tag text-primary me-1"></i>Jenis Anggaran Pos</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+          <p class="small text-muted">Pilih kelompok anggaran agar pos dapat dilaporkan berdasarkan Fasilitas, Rapat, Perjalanan Dinas, atau kelompok lainnya.</p>
+          <label class="form-label small fw-semibold">Pos: <span id="jenisPosNama">-</span></label>
+          <select class="form-select" name="jenis_anggaran_id" id="jenisPosSelect" required>
+            <option value="">-- Pilih Jenis Anggaran --</option>
+            <?php foreach(($jenis_anggaran ?? array()) as $ja): ?><option value="<?= (int)$ja['id'] ?>"><?= html_escape($ja['nama']) ?></option><?php endforeach; ?>
+          </select>
+        </div>
+        <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan</button></div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- ── Modal Revisi Pagu ── -->
@@ -467,6 +491,19 @@
 <script>
 $(function(){
   var currentPagu = 0, currentRealisasi = 0;
+
+  $(document).on('click', '.js-jenis-pos', function(){
+    $('#jenisPosId').val($(this).data('pos-id'));
+    $('#jenisPosNama').text($(this).data('pos-nama') || '-');
+    $('#jenisPosSelect').val(String($(this).data('jenis-id') || ''));
+    bootstrap.Modal.getOrCreateInstance('#modalJenisPos').show();
+  });
+
+  $('#formJenisPos').on('submit', function(e){
+    e.preventDefault();
+    App.ajax({url: window.APP.baseUrl + 'pos/set_jenis_anggaran', data: $(this).serialize()})
+      .done(function(r){ if(r.status){ bootstrap.Modal.getOrCreateInstance('#modalJenisPos').hide(); setTimeout(function(){ location.reload(); }, 400); } });
+  });
 
   // Selalu baca nilai dari input yang terlihat agar angka tampilan dan angka
   // yang dihitung tidak berbeda ketika hidden input belum tersinkron.

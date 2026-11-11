@@ -9,20 +9,87 @@ class Laporan extends MY_Controller
     {
         parent::__construct();
         $this->require_login();
-        $this->load->model(array('Laporan_model', 'Penerima_model', 'Jenis_biaya_model'));
+        $this->load->model(array('Laporan_model', 'Penerima_model', 'Jenis_biaya_model', 'Tahun_model'));
     }
 
     public function index(): void
     {
         $this->require_any(array('laporan.view_all', 'laporan.view_own'));
         $this->load->view('layout/main', array(
-            'title' => 'Laporan',
+            'title' => 'Laporan per Komponen Biaya',
             'view'  => 'laporan/index',
             'data'  => array(
                 'penerima'   => $this->Penerima_model->all(),
                 'jenis'      => $this->Jenis_biaya_model->all(),
+                'tahunList'  => $this->Tahun_model->all(),
                 'can_export' => can('laporan.export')
             )
+        ));
+    }
+
+    private function tahun_laporan(): array
+    {
+        $tahunList = $this->Tahun_model->all();
+        $requested = (int)($this->input->get('tahun_anggaran_id') ?: $this->session->userdata('tahun_aktif_id'));
+        $selected = 0;
+        foreach ($tahunList as $tahun) {
+            if ((int)$tahun['id'] === $requested) {
+                $selected = (int)$tahun['id'];
+                break;
+            }
+        }
+        if (!$selected && !empty($tahunList)) {
+            $selected = (int)$tahunList[0]['id'];
+        }
+        $label = '-';
+        foreach ($tahunList as $tahun) {
+            if ((int)$tahun['id'] === $selected) {
+                $label = (string)$tahun['tahun'];
+                break;
+            }
+        }
+        return array($tahunList, $selected, $label);
+    }
+
+    public function anggota(): void
+    {
+        $this->require_any(array('laporan.view_all', 'laporan.view_own'));
+        list($tahunList, $tahunId, $tahunLabel) = $this->tahun_laporan();
+        $this->load->view('layout/main', array(
+            'title' => 'Laporan per Anggota DPRD',
+            'view'  => 'laporan/anggota',
+            'data'  => array(
+                'tahunList' => $tahunList,
+                'tahunId'   => $tahunId,
+                'tahunLabel'=> $tahunLabel,
+                'rows'      => $this->Laporan_model->ringkasan_anggota($tahunId, $this->rbac->scope('laporan'), $this->own_penerima_id())
+            )
+        ));
+    }
+
+    public function pos(): void
+    {
+        $this->require_any(array('laporan.view_all', 'laporan.view_own'));
+        list($tahunList, $tahunId, $tahunLabel) = $this->tahun_laporan();
+        $this->load->view('layout/main', array(
+            'title' => 'Laporan per Pos Anggaran',
+            'view'  => 'laporan/pos',
+            'data'  => array(
+                'tahunList' => $tahunList,
+                'tahunId'   => $tahunId,
+                'tahunLabel'=> $tahunLabel,
+                'rows'      => $this->Laporan_model->ringkasan_pos($tahunId, $this->rbac->scope('laporan'), $this->own_penerima_id())
+            )
+        ));
+    }
+
+    public function riwayat(): void
+    {
+        $this->require_any(array('kegiatan.verify', 'audit.view'));
+        $this->load->view('layout/main', array(
+            'title' => 'History Verifikasi & Audit',
+            'view'  => 'laporan/riwayat',
+            'data'  => array()
         ));
     }
 

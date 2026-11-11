@@ -110,6 +110,28 @@ CREATE TABLE `jenis_biaya` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `jenis_kegiatan`;
+CREATE TABLE `jenis_kegiatan` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `kode` VARCHAR(40) NOT NULL UNIQUE,
+  `nama` VARCHAR(120) NOT NULL,
+  `subjenis_json` JSON NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `urutan` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `jenis_anggaran`;
+CREATE TABLE `jenis_anggaran` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `kode` VARCHAR(40) NOT NULL UNIQUE,
+  `nama` VARCHAR(120) NOT NULL,
+  `keterangan` TEXT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `urutan` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- -----------------------------------------------------------------------------
 -- 4. Pos Anggaran & Penugasan Pos
 -- (Konsep baru: pagu DPRD melekat per orang, pagu Pendamping melekat per pos jabatan)
@@ -124,6 +146,7 @@ CREATE TABLE `pos_anggaran` (
   `nama` VARCHAR(200) NOT NULL,
   `tipe` ENUM('DPRD','PENDAMPING') NOT NULL,
   `penerima_id` INT UNSIGNED NULL, -- Melekat tetap pada anggota DPRD
+  `jenis_anggaran_id` INT UNSIGNED NULL,
   `pagu` DECIMAL(18,2) NOT NULL DEFAULT 0,
   `kelompok_jabatan` ENUM('KETUA','WAKIL_KETUA','ANGGOTA') NULL,
   `urutan` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -137,6 +160,7 @@ CREATE TABLE `pos_anggaran` (
   INDEX `idx_pos_tipe` (`tipe`),
   CONSTRAINT `fk_pos_tahun` FOREIGN KEY (`tahun_anggaran_id`) REFERENCES `tahun_anggaran` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_pos_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE SET NULL
+  ,CONSTRAINT `fk_pos_jenis_anggaran` FOREIGN KEY (`jenis_anggaran_id`) REFERENCES `jenis_anggaran` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `penugasan_pos` (
@@ -213,12 +237,15 @@ CREATE TABLE `anggaran_rincian` (
 -- -----------------------------------------------------------------------------
 DROP TABLE IF EXISTS `kegiatan_biaya`;
 DROP TABLE IF EXISTS `kegiatan_peserta`;
+DROP TABLE IF EXISTS `kegiatan_anggaran`;
 DROP TABLE IF EXISTS `kegiatan`;
 
 CREATE TABLE `kegiatan` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `tahun_anggaran_id` INT UNSIGNED NOT NULL,
   `nama_kegiatan` VARCHAR(200) NOT NULL,
+  `jenis_kegiatan_id` INT UNSIGNED NULL,
+  `subjenis_kegiatan` VARCHAR(120) NULL,
   `no_surat_tugas` VARCHAR(100) NULL,
   `tanggal_surat_tugas` DATE NULL,
   `tema` VARCHAR(255) NULL,
@@ -248,6 +275,26 @@ CREATE TABLE `kegiatan` (
   CONSTRAINT `fk_kegiatan_submitter` FOREIGN KEY (`diajukan_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_kegiatan_verifier` FOREIGN KEY (`diverifikasi_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_kegiatan_printer` FOREIGN KEY (`dicetak_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  ,CONSTRAINT `fk_kegiatan_jenis` FOREIGN KEY (`jenis_kegiatan_id`) REFERENCES `jenis_kegiatan` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `kegiatan_anggaran` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `kegiatan_id` INT UNSIGNED NOT NULL,
+  `pos_anggaran_id` INT UNSIGNED NOT NULL,
+  `nilai_alokasi` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  `keterangan` TEXT NULL,
+  `status` ENUM('DRAFT','DISETUJUI','DITOLAK') NOT NULL DEFAULT 'DRAFT',
+  `disetujui_oleh` INT UNSIGNED NULL,
+  `disetujui_at` DATETIME NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_kegiatan_pos` (`kegiatan_id`, `pos_anggaran_id`),
+  INDEX `idx_ka_pos` (`pos_anggaran_id`),
+  CONSTRAINT `fk_ka_kegiatan` FOREIGN KEY (`kegiatan_id`) REFERENCES `kegiatan` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ka_pos` FOREIGN KEY (`pos_anggaran_id`) REFERENCES `pos_anggaran` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_ka_user` FOREIGN KEY (`disetujui_oleh`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `kegiatan_peserta` (
@@ -255,8 +302,10 @@ CREATE TABLE `kegiatan_peserta` (
   `kegiatan_id` INT UNSIGNED NOT NULL,
   `penerima_id` INT UNSIGNED NOT NULL,
   `sumber_dana_id` INT UNSIGNED NULL,
+  `kegiatan_anggaran_id` INT UNSIGNED NULL,
   `pos_anggaran_id` INT UNSIGNED NULL,     -- Pos anggaran yang dibebani
-  `alasan_pengalihan` TEXT NULL,           -- Catatan bila dialihkan ke pos lain
+  `alasan_pengalihan` TEXT NULL,           -- Keterangan sumber/pembebanan anggaran
+  `dana_awal` DECIMAL(18,2) NOT NULL DEFAULT 0, -- Uang muka / panjar peserta
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_kegiatan_peserta` (`kegiatan_id`, `penerima_id`),
   INDEX `idx_kp_pos_anggaran` (`pos_anggaran_id`),
@@ -264,11 +313,13 @@ CREATE TABLE `kegiatan_peserta` (
   CONSTRAINT `fk_kp_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_kp_sumber` FOREIGN KEY (`sumber_dana_id`) REFERENCES `sumber_dana` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_kp_pos` FOREIGN KEY (`pos_anggaran_id`) REFERENCES `pos_anggaran` (`id`) ON DELETE SET NULL
+  ,CONSTRAINT `fk_kp_anggaran` FOREIGN KEY (`kegiatan_anggaran_id`) REFERENCES `kegiatan_anggaran` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `kegiatan_biaya` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `kegiatan_peserta_id` INT UNSIGNED NOT NULL,
+  `kegiatan_peserta_id` INT UNSIGNED NULL,
+  `kegiatan_anggaran_id` INT UNSIGNED NULL,
   `jenis_biaya_id` INT UNSIGNED NOT NULL,
   `volume` DECIMAL(14,2) NOT NULL DEFAULT 0,
   `tarif` DECIMAL(18,2) NOT NULL DEFAULT 0,
@@ -277,6 +328,7 @@ CREATE TABLE `kegiatan_biaya` (
   INDEX `idx_kb_peserta` (`kegiatan_peserta_id`),
   INDEX `idx_kb_jenis` (`jenis_biaya_id`),
   CONSTRAINT `fk_kb_peserta` FOREIGN KEY (`kegiatan_peserta_id`) REFERENCES `kegiatan_peserta` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_kb_anggaran` FOREIGN KEY (`kegiatan_anggaran_id`) REFERENCES `kegiatan_anggaran` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_kb_jenis` FOREIGN KEY (`jenis_biaya_id`) REFERENCES `jenis_biaya` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -374,15 +426,29 @@ SELECT
   pa.nama AS pos_nama,
   pa.tipe,
   pa.penerima_id,
+  ja.nama AS jenis_anggaran_nama,
   pa.pagu,
   pa.kelompok_jabatan,
-  COALESCE(SUM(CASE WHEN k.status = 'AKTIF' THEN kb.volume * kb.tarif ELSE 0 END), 0) AS realisasi,
-  pa.pagu - COALESCE(SUM(CASE WHEN k.status = 'AKTIF' THEN kb.volume * kb.tarif ELSE 0 END), 0) AS sisa
+  COALESCE(r.realisasi, 0) AS realisasi,
+  pa.pagu - COALESCE(r.realisasi, 0) AS sisa
 FROM `pos_anggaran` pa
-LEFT JOIN `kegiatan_peserta` kp ON kp.pos_anggaran_id = pa.id
-LEFT JOIN `kegiatan_biaya` kb   ON kb.kegiatan_peserta_id = kp.id
-LEFT JOIN `kegiatan` k          ON k.id = kp.kegiatan_id AND k.status = 'AKTIF'
-GROUP BY pa.id;
+LEFT JOIN `jenis_anggaran` ja ON ja.id = pa.jenis_anggaran_id
+LEFT JOIN (
+  SELECT x.pos_anggaran_id, SUM(x.nilai) AS realisasi
+  FROM (
+    SELECT ka.pos_anggaran_id, kb.id AS biaya_id, (kb.volume * kb.tarif) AS nilai
+    FROM kegiatan_anggaran ka
+    JOIN kegiatan_biaya kb ON kb.kegiatan_anggaran_id = ka.id
+    JOIN kegiatan k ON k.id = ka.kegiatan_id AND k.status = 'AKTIF'
+    UNION ALL
+    SELECT kp.pos_anggaran_id, kb.id AS biaya_id, (kb.volume * kb.tarif) AS nilai
+    FROM kegiatan_peserta kp
+    JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id = kp.id AND kb.kegiatan_anggaran_id IS NULL
+    JOIN kegiatan k ON k.id = kp.kegiatan_id AND k.status = 'AKTIF'
+    WHERE kp.pos_anggaran_id IS NOT NULL
+  ) x
+  GROUP BY x.pos_anggaran_id
+) r ON r.pos_anggaran_id = pa.id;
 
 -- View 3: Sisa Anggaran Konvensional (Legacy Compatibility)
 CREATE OR REPLACE VIEW `v_sisa_anggaran` AS
@@ -405,39 +471,37 @@ LEFT JOIN `v_realisasi` r ON r.tahun_anggaran_id = a.tahun_anggaran_id AND r.pen
 
 -- View 4: Detail Biaya untuk Laporan & Export
 CREATE OR REPLACE VIEW `v_detail_biaya` AS
-SELECT 
-  k.id AS kegiatan_id,
-  k.tahun_anggaran_id,
-  k.nama_kegiatan,
-  k.no_surat_tugas,
-  k.tanggal_surat_tugas,
-  k.tema,
-  k.tanggal_input,
-  k.tanggal_mulai,
-  k.tanggal_selesai,
-  k.tempat,
-  k.status,
-  kp.penerima_id,
-  p.nama AS penerima_nama,
-  p.tipe,
-  p.jabatan,
-  kp.pos_anggaran_id,
+SELECT
+  k.id AS kegiatan_id, k.tahun_anggaran_id, k.nama_kegiatan, k.no_surat_tugas,
+  k.tanggal_surat_tugas, k.tema, k.tanggal_input, k.tanggal_mulai, k.tanggal_selesai,
+  k.tempat, k.status, kp.penerima_id, p.nama AS penerima_nama, p.tipe, p.jabatan,
+  COALESCE(ka.pos_anggaran_id, kp.pos_anggaran_id) AS pos_anggaran_id,
   COALESCE(pa.nama, sd.nama, 'APBD') AS sumber_dana_nama,
-  kp.sumber_dana_id,
-  sd.kode AS sumber_dana_kode,
-  j.id AS jenis_biaya_id,
-  j.kode AS jenis_biaya_kode,
-  j.nama AS jenis_biaya_nama,
-  kb.volume,
-  kb.tarif,
-  (kb.volume * kb.tarif) AS subtotal
-FROM `kegiatan` k 
-JOIN `kegiatan_peserta` kp ON kp.kegiatan_id = k.id
-JOIN `penerima` p         ON p.id = kp.penerima_id
-LEFT JOIN `pos_anggaran` pa ON pa.id = kp.pos_anggaran_id
-LEFT JOIN `sumber_dana` sd  ON sd.id = kp.sumber_dana_id
-JOIN `kegiatan_biaya` kb   ON kb.kegiatan_peserta_id = kp.id
-JOIN `jenis_biaya` j       ON j.id = kb.jenis_biaya_id;
+  kp.sumber_dana_id, sd.kode AS sumber_dana_kode,
+  j.id AS jenis_biaya_id, j.kode AS jenis_biaya_kode, j.nama AS jenis_biaya_nama,
+  kb.volume, kb.tarif, (kb.volume * kb.tarif) AS subtotal
+FROM kegiatan k
+JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id IS NOT NULL
+JOIN kegiatan_peserta kp ON kp.id = kb.kegiatan_peserta_id AND kp.kegiatan_id = k.id
+JOIN penerima p ON p.id = kp.penerima_id
+LEFT JOIN kegiatan_anggaran ka ON ka.id = kb.kegiatan_anggaran_id
+LEFT JOIN pos_anggaran pa ON pa.id = COALESCE(ka.pos_anggaran_id, kp.pos_anggaran_id)
+LEFT JOIN sumber_dana sd ON sd.id = kp.sumber_dana_id
+JOIN jenis_biaya j ON j.id = kb.jenis_biaya_id
+UNION ALL
+SELECT
+  k.id AS kegiatan_id, k.tahun_anggaran_id, k.nama_kegiatan, k.no_surat_tugas,
+  k.tanggal_surat_tugas, k.tema, k.tanggal_input, k.tanggal_mulai, k.tanggal_selesai,
+  k.tempat, k.status, NULL AS penerima_id, 'Kegiatan Umum' AS penerima_nama,
+  NULL AS tipe, NULL AS jabatan, ka.pos_anggaran_id, pa.nama AS sumber_dana_nama,
+  NULL AS sumber_dana_id, NULL AS sumber_dana_kode,
+  j.id AS jenis_biaya_id, j.kode AS jenis_biaya_kode, j.nama AS jenis_biaya_nama,
+  kb.volume, kb.tarif, (kb.volume * kb.tarif) AS subtotal
+FROM kegiatan k
+JOIN kegiatan_anggaran ka ON ka.kegiatan_id = k.id
+JOIN kegiatan_biaya kb ON kb.kegiatan_anggaran_id = ka.id AND kb.kegiatan_peserta_id IS NULL
+JOIN pos_anggaran pa ON pa.id = ka.pos_anggaran_id
+JOIN jenis_biaya j ON j.id = kb.jenis_biaya_id;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

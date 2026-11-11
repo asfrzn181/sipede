@@ -14,7 +14,8 @@
 3. Import `database/schema.sql`.
 4. Import `database/seed.sql` pada database yang sama.
 5. Jika ingin memasukkan data anggota DPRD, import `database/inject_anggota_dprd_2024_2029.sql` setelah seed.
-6. Jangan menaruh folder `database/` di document root publik.
+6. Untuk database lama, import `database/migrate_fleksibel_anggaran.sql` satu kali agar kegiatan dapat memakai beberapa pos anggaran.
+7. Jangan menaruh folder `database/` di document root publik.
 
 ## Konfigurasi aplikasi
 

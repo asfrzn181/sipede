@@ -10,7 +10,7 @@ class Audit extends MY_Controller {
 
     public function index(): void {
         $this->load->view('layout/main', array(
-            'title' => 'Audit Log',
+            'title' => 'History Verifikasi & Audit',
             'view'  => 'audit/index',
             'data'  => array('rows' => array())
         ));

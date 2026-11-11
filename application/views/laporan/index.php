@@ -1,3 +1,11 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h5 fw-bold text-dark mb-1">Laporan per Komponen Biaya</h1>
+    <p class="text-muted small mb-0">Melihat penyerapan realisasi berdasarkan jenis komponen biaya pada setiap kegiatan.</p>
+  </div>
+  <span class="badge text-bg-light border text-muted">Detail transaksi &amp; ekspor</span>
+</div>
+
 <div class="card shadow-sm mb-4">
   <div class="card-header bg-white fw-bold">
     <i class="bi bi-funnel me-1 text-primary"></i> Filter Laporan
@@ -5,6 +13,14 @@
   <div class="card-body">
     <form id="reportForm">
       <div class="row g-3">
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold">Tahun Anggaran</label>
+          <select class="form-select" name="tahun_anggaran_id">
+            <?php foreach($tahunList as $tahun): ?>
+            <option value="<?= (int)$tahun['id'] ?>" <?= (int)$tahun['id'] === (int)$this->session->userdata('tahun_aktif_id') ? 'selected' : '' ?>><?= (int)$tahun['tahun'] ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
         <div class="col-12 col-md-3">
           <label class="form-label small fw-semibold">Dari tanggal</label>
           <input class="form-control" type="date" name="tanggal_mulai">

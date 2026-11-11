@@ -36,6 +36,7 @@ class Kegiatan extends MY_Controller
                 'rows'        => array(),
                 'penerima'    => $this->Penerima_model->with_budget_source($year),
                 'jenis'       => $this->Jenis_biaya_model->all(),
+                'jenis_kegiatan' => $this->db->where('is_active', 1)->order_by('urutan')->get('jenis_kegiatan')->result_array(),
                 'sumber_dana' => $this->Sumber_dana_model->all(),
                 'tahun_anggaran' => $tahunAnggaran,
                 'tahun_aktif_id' => $year,
@@ -182,6 +183,7 @@ class Kegiatan extends MY_Controller
                 'kegiatan'       => $kegiatan,
                 'penerima'       => $this->Penerima_model->all_active(),
                 'sumber_dana'    => $this->Sumber_dana_model->all(),
+                'jenis_kegiatan' => $this->db->where('is_active', 1)->order_by('urutan')->get('jenis_kegiatan')->result_array(),
                 'jenis_biaya'    => $this->Jenis_biaya_model->all(),
                 'pos_anggaran'   => $posAnggaran,
                 'can_update'     => (can('kegiatan.update') || can('kegiatan.create'))
@@ -231,6 +233,8 @@ class Kegiatan extends MY_Controller
             'tempat'              => trim((string)$this->input->post('tempat', TRUE)),
             'tema'                => trim((string)$this->input->post('tema', TRUE)),
             'nama_kegiatan'       => trim((string)$this->input->post('tema', TRUE)),
+            'jenis_kegiatan_id'   => (int)$this->input->post('jenis_kegiatan_id'),
+            'subjenis_kegiatan'   => trim((string)$this->input->post('subjenis_kegiatan', TRUE)),
             'status'              => $this->rbac->scope('kegiatan') === 'own'
                 ? 'DRAFT'
                 : ($this->input->post('status', TRUE) ?: 'DRAFT'),
@@ -291,9 +295,17 @@ class Kegiatan extends MY_Controller
         $kegiatanPesertaId = decrypt_id($payload['id'] ?? $this->input->post('id'));
         $posAnggaranId = decrypt_id($payload['pos_anggaran_id'] ?? $this->input->post('pos_anggaran_id'));
         $alasanPengalihan = trim((string)($payload['alasan_pengalihan'] ?? $this->input->post('alasan_pengalihan', TRUE)));
+        $rawDanaAwal = $payload['dana_awal'] ?? $this->input->post('dana_awal', TRUE);
+        $danaAwal = clean_number($rawDanaAwal);
 
         if (!$kegiatanId || !$penerimaId) {
             $this->respond(FALSE, 'ID Kegiatan atau Penerima tidak valid.', array(), array(), 422);
+        }
+        if ($rawDanaAwal === null || $rawDanaAwal === '' || $danaAwal < 0) {
+            $this->respond(FALSE, 'Dana awal wajib diisi dengan nominal yang valid.', array(), array('dana_awal' => 'Wajib diisi.'), 422);
+        }
+        if ($alasanPengalihan === '') {
+            $this->respond(FALSE, 'Keterangan anggaran wajib diisi untuk setiap peserta.', array(), array('alasan_pengalihan' => 'Wajib diisi.'), 422);
         }
 
         $kegiatan = $this->Kegiatan_model->find($kegiatanId);
@@ -355,16 +367,6 @@ class Kegiatan extends MY_Controller
             $this->respond(FALSE, 'Pos anggaran tidak tersedia pada tahun kegiatan.', array(), array(), 422);
         }
 
-        $satuKelompokJabatan = $posDefault && $posDipilih
-            && strcasecmp(trim((string)$posDefault['nama']), trim((string)$posDipilih['nama'])) === 0;
-
-        if ($satuKelompokJabatan) {
-            $alasanPengalihan = NULL;
-        } elseif ($posDefault && $posAnggaranId && (int)$posDefault['id'] !== (int)$posAnggaranId) {
-            if (empty($alasanPengalihan)) {
-                $this->respond(FALSE, 'Alasan penggunaan pos anggaran lain wajib diisi.', array(), array('alasan_pengalihan' => 'Wajib diisi.'), 422);
-            }
-        }
         if (!$posAnggaranId) {
             $this->respond(FALSE, 'Pos anggaran wajib dipilih.', array(), array('pos_anggaran_id' => 'Wajib dipilih.'), 422);
         }
@@ -401,6 +403,7 @@ class Kegiatan extends MY_Controller
             'penerima_id'       => $penerimaId,
             'pos_anggaran_id'   => $posAnggaranId,
             'alasan_pengalihan' => $alasanPengalihan,
+            'dana_awal'         => $danaAwal,
             'sumber_dana_id'    => !empty($payload['sumber_dana_id']) ? (int)$payload['sumber_dana_id'] : NULL,
             'biaya'             => $payload['biaya'] ?? array(),
         );
@@ -419,6 +422,87 @@ class Kegiatan extends MY_Controller
         $this->respond(TRUE, 'Peserta dan rincian biaya berhasil disimpan.', array(
             'kegiatan_peserta_id' => encrypt_id($savedKpId)
         ));
+    }
+
+    /**
+     * Simpan alokasi pagu kegiatan. Satu kegiatan boleh memakai beberapa pos.
+     */
+    public function save_alokasi(): void {
+        $this->require_any(array('kegiatan.create', 'kegiatan.update'));
+        $payload = input_json();
+        $kegiatanId = decrypt_id($payload['kegiatan_id'] ?? $this->input->post('kegiatan_id'));
+        $posId = decrypt_id($payload['pos_anggaran_id'] ?? $this->input->post('pos_anggaran_id'));
+        $allocationId = decrypt_id($payload['id'] ?? $this->input->post('id'));
+        $nilai = clean_number($payload['nilai_alokasi'] ?? $this->input->post('nilai_alokasi', TRUE));
+        $keterangan = trim((string)($payload['keterangan'] ?? $this->input->post('keterangan', TRUE)));
+
+        if (!$kegiatanId || !$posId || $nilai < 0) {
+            $this->respond(FALSE, 'Kegiatan, pos anggaran, dan nilai alokasi wajib valid.', array(), array(), 422);
+        }
+        $kegiatan = $this->Kegiatan_model->find($kegiatanId);
+        $pos = $this->Pos_model->find($posId);
+        if (!$kegiatan || !$pos) $this->respond(FALSE, 'Kegiatan atau pos anggaran tidak ditemukan.', array(), array(), 404);
+        if ((int)$pos['tahun_anggaran_id'] !== (int)$kegiatan['tahun_anggaran_id'] || empty($pos['is_active'])) {
+            $this->respond(FALSE, 'Pos anggaran harus berasal dari tahun kegiatan dan masih aktif.', array(), array(), 422);
+        }
+        if ($this->rbac->scope('kegiatan') === 'own' && !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $this->own_penerima_id())) {
+            $this->deny();
+        }
+        $this->db->select_sum('nilai_alokasi')->where('pos_anggaran_id', $posId);
+        if ($allocationId) $this->db->where('id !=', $allocationId);
+        $allocatedElsewhere = (float)(($this->db->get('kegiatan_anggaran')->row_array()['nilai_alokasi'] ?? 0));
+        if ((float)$pos['pagu'] > 0 && ($allocatedElsewhere + (float)$nilai) > (float)$pos['pagu']) {
+            $this->respond(FALSE, 'Total alokasi pada pos melebihi pagu pos anggaran. Pagu: ' . rupiah($pos['pagu']) . ', sudah dialokasikan: ' . rupiah($allocatedElsewhere), array(), array(), 422);
+        }
+        $savedId = $this->Kegiatan_model->save_alokasi_anggaran($kegiatanId, $posId, (float)$nilai, $keterangan ?: null, $allocationId ?: null);
+        $this->Audit_model->write('KEGIATAN_ANGGARAN', $savedId, $allocationId ? 'EDIT_ALOKASI' : 'TAMBAH_ALOKASI', array(), array(
+            'kegiatan_id' => $kegiatanId, 'pos_anggaran_id' => $posId, 'nilai_alokasi' => $nilai, 'keterangan' => $keterangan
+        ), (int)$this->user['id']);
+        $this->respond(TRUE, 'Alokasi anggaran kegiatan berhasil disimpan.');
+    }
+
+    public function delete_alokasi($id): void {
+        $this->require_any(array('kegiatan.create', 'kegiatan.update'));
+        $allocationId = decrypt_id($id);
+        if (!$allocationId) $this->respond(FALSE, 'ID alokasi tidak valid.', array(), array(), 422);
+        $allocation = $this->db->get_where('kegiatan_anggaran', array('id' => $allocationId))->row_array();
+        if (!$allocation) $this->respond(FALSE, 'Alokasi tidak ditemukan.', array(), array(), 404);
+        if ($this->rbac->scope('kegiatan') === 'own' && !$this->Kegiatan_model->belongs_to_penerima((int)$allocation['kegiatan_id'], $this->own_penerima_id())) {
+            $this->deny();
+        }
+        if (!$this->Kegiatan_model->delete_alokasi_anggaran($allocationId)) {
+            $this->respond(FALSE, 'Alokasi tidak dapat dihapus karena sudah dipakai peserta atau memiliki realisasi biaya.', array(), array(), 422);
+        }
+        $this->respond(TRUE, 'Alokasi anggaran dihapus.');
+    }
+
+    /**
+     * Tambah biaya umum langsung ke alokasi, untuk rapat/fasilitas yang tidak
+     * menggunakan peserta perjalanan dinas.
+     */
+    public function save_biaya_umum(): void {
+        $this->require_any(array('kegiatan.create', 'kegiatan.update'));
+        $payload = input_json();
+        $kegiatanId = decrypt_id($payload['kegiatan_id'] ?? $this->input->post('kegiatan_id'));
+        $allocationId = decrypt_id($payload['kegiatan_anggaran_id'] ?? $this->input->post('kegiatan_anggaran_id'));
+        $jenisId = (int)($payload['jenis_biaya_id'] ?? $this->input->post('jenis_biaya_id'));
+        $volume = (float)($payload['volume'] ?? $this->input->post('volume'));
+        $tarif = clean_number($payload['tarif'] ?? $this->input->post('tarif'));
+        if (!$kegiatanId || !$allocationId || !$jenisId || $volume <= 0 || $tarif < 0) {
+            $this->respond(FALSE, 'Alokasi, komponen biaya, volume, dan tarif wajib diisi dengan benar.', array(), array(), 422);
+        }
+        $allocation = $this->db->get_where('kegiatan_anggaran', array('id' => $allocationId, 'kegiatan_id' => $kegiatanId))->row_array();
+        if (!$allocation) $this->respond(FALSE, 'Alokasi anggaran tidak ditemukan.', array(), array(), 404);
+        if ($this->rbac->scope('kegiatan') === 'own' && !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $this->own_penerima_id())) $this->deny();
+        $currentCost = $this->db->query('SELECT COALESCE(SUM(volume * tarif), 0) AS total FROM kegiatan_biaya WHERE kegiatan_anggaran_id = ?', array($allocationId))->row_array();
+        $newTotal = (float)($currentCost['total'] ?? 0) + ($volume * (float)$tarif);
+        if ($newTotal > (float)$allocation['nilai_alokasi']) {
+            $this->respond(FALSE, 'Realisasi melebihi alokasi kegiatan. Alokasi: ' . rupiah($allocation['nilai_alokasi']), array(), array(), 422);
+        }
+        $costId = $this->Kegiatan_model->save_biaya_umum($kegiatanId, $allocationId, $jenisId, $volume, (float)$tarif);
+        if (!$costId) $this->respond(FALSE, 'Biaya umum gagal disimpan.', array(), array(), 422);
+        $this->Audit_model->write('KEGIATAN_BIAYA', $costId, 'TAMBAH_BIAYA_UMUM', array(), $payload, (int)$this->user['id']);
+        $this->respond(TRUE, 'Biaya kegiatan berhasil disimpan.');
     }
 
     /**

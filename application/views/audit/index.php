@@ -1,3 +1,10 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h5 fw-bold text-dark mb-1">History Verifikasi &amp; Audit</h1>
+    <p class="text-muted small mb-0">Menelusuri perubahan data, persetujuan, penolakan, dan aktivitas penting pengguna untuk kebutuhan pengawasan.</p>
+  </div>
+  <a href="<?= site_url('kegiatan/antrian') ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-check2-square me-1"></i>History Verifikasi</a>
+</div>
 <div class="card shadow-sm">
   <div class="card-header bg-white fw-bold d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-2">

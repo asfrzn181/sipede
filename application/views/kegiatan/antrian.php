@@ -1,3 +1,10 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h5 fw-bold text-dark mb-1">History Verifikasi Kegiatan</h1>
+    <p class="text-muted small mb-0">Memeriksa kegiatan yang menunggu persetujuan dan menelusuri hasil verifikasi yang sudah diproses.</p>
+  </div>
+  <a href="<?= site_url('laporan/riwayat') ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Pusat History &amp; Audit</a>
+</div>
 <div class="card shadow-sm">
   <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-2">

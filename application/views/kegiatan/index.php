@@ -15,7 +15,7 @@
   <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-2">
       <i class="bi bi-calendar2-event text-primary"></i>
-      <span>Data Surat Tugas Perjalanan Dinas</span>
+      <span>Data Kegiatan &amp; Surat Tugas</span>
     </div>
     <div class="d-flex align-items-center gap-2">
       <label for="filterTahunKegiatan" class="small text-muted mb-0">Tahun Anggaran</label>
@@ -97,6 +97,18 @@
               <div class="form-text small">Tahun ini menjadi acuan pagu, pos anggaran, dan rincian biaya kegiatan.</div>
             </div>
             <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Jenis Kegiatan <span class="text-danger">*</span></label>
+              <select class="form-select" name="jenis_kegiatan_id" id="inpJenisKegiatan" required>
+                <?php foreach (($jenis_kegiatan ?? array()) as $jk): ?>
+                  <option value="<?= (int)$jk['id'] ?>"><?= html_escape($jk['nama']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Subjenis / Kategori</label>
+              <input class="form-control" name="subjenis_kegiatan" id="inpSubjenisKegiatan" placeholder="Contoh: Rapat Komisi I">
+            </div>
+            <div class="col-12 col-md-6">
               <label class="form-label small fw-semibold">Tanggal Pelaksanaan Mulai <span class="text-danger">*</span></label>
               <input class="form-control" type="date" name="tanggal_mulai" id="inpTglMulai" required>
             </div>
@@ -116,9 +128,9 @@
               </select>
             </div>
             <div class="col-12">
-              <label class="form-label small fw-semibold">Tema / Maksud Perjalanan Dinas <span class="text-danger">*</span></label>
+              <label class="form-label small fw-semibold">Tema / Maksud Kegiatan <span class="text-danger">*</span></label>
               <textarea class="form-control" name="tema" id="inpTema" rows="2" placeholder="Contoh: Kunjungan Kerja Komisi III Terkait Pengelolaan Tata Ruang Wilayah" required></textarea>
-              <div class="form-text small text-muted">Setelah menyimpan Surat Tugas (parent), Anda akan langsung diarahkan ke menu <strong>Rincian Kegiatan</strong> untuk mengisi peserta dan pendamping.</div>
+              <div class="form-text small text-muted">Setelah menyimpan kegiatan, Anda dapat memilih beberapa pos anggaran, menambahkan biaya umum, atau mengisi peserta perjalanan dinas.</div>
             </div>
           </div>
         </div>
@@ -195,6 +207,8 @@ $(function(){
     $('#inpTempat').val(r.tempat);
     $('#inpTema').val(r.tema || r.nama_kegiatan);
     $('#inpStatus').val(r.status);
+    $('#inpJenisKegiatan').val(r.jenis_kegiatan_id || '');
+    $('#inpSubjenisKegiatan').val(r.subjenis_kegiatan || '');
     $('#modalHeaderTitle').html('<i class="bi bi-pencil-square text-primary me-1"></i> Edit Surat Tugas: ' + (r.no_surat_tugas || ''));
     bootstrap.Modal.getOrCreateInstance('#modalSuratTugas').show();
   });

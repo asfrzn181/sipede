@@ -42,11 +42,17 @@ untuk setiap skenario.
 | KGT-04 | Rincian biaya | Tambahkan jenis biaya, volume, dan tarif | Subtotal dan total kegiatan dihitung benar | |
 | KGT-05 | Pagu tidak cukup | Masukkan rincian melebihi sisa pagu | Sistem menolak penyimpanan atau pengajuan | |
 | KGT-06 | Peserta ganda | Tambahkan JUMADI dua kali pada satu kegiatan | Sistem menolak peserta yang sama | |
-| KGT-07 | Pengalihan pos | Pilih pos pendamping lain tanpa alasan | Sistem meminta alasan pengalihan | |
-| KGT-08 | Pengalihan valid | Pilih pos lain dan isi alasan pengalihan | Data tersimpan dan alasan tercatat | |
+| KGT-07 | Keterangan anggaran | Pilih pos bawaan peserta lalu kosongkan keterangan | Sistem meminta keterangan anggaran | |
+| KGT-08 | Keterangan anggaran valid | Isi dana awal dan keterangan anggaran | Data tersimpan untuk anggaran sendiri maupun anggaran lain | |
+| KGT-08A | Dana awal dan nota | Isi dana awal Rp100.000.000 lalu input nota Rp5.000.000 | Realisasi Rp5.000.000 dan selisih Rp95.000.000 | |
 | KGT-09 | Tahun kegiatan | Simpan kegiatan 2026 lalu buka rincian | Rincian menampilkan Tahun Anggaran 2026 | |
 | KGT-10 | Ajukan kegiatan | Operator melengkapi peserta lalu klik Ajukan Verifikasi | Status berubah dari DRAFT menjadi DIAJUKAN | |
 | KGT-11 | Saldo sebelum verifikasi | Simpan DRAFT dan ajukan kegiatan | Pagu/realisasi belum berkurang sebelum kegiatan disetujui | |
+| KGT-12 | Jenis kegiatan rapat | Buat kegiatan dengan jenis Rapat dan subjenis Rapat Komisi I | Jenis kegiatan tampil pada rincian dan dapat dibedakan dari perjalanan dinas | |
+| KGT-13 | Alokasi multi-pos | Pada satu kegiatan tambahkan Pos Rapat Rp100.000.000 dan Pos Fasilitas Rp30.000.000 | Dua pos tampil sebagai alokasi kegiatan dengan total pagu Rp130.000.000 | |
+| KGT-14 | Biaya umum tanpa peserta | Pada alokasi rapat tambahkan biaya konsumsi tanpa menambahkan peserta | Biaya tersimpan, total kegiatan dan realisasi pos menghitung biaya tersebut | |
+| KGT-15 | Batas pagu alokasi | Buat alokasi yang totalnya melebihi pagu pos | Sistem menolak dan menampilkan pagu yang tersedia | |
+| KGT-16 | Sisa alokasi kegiatan | Alokasi Rp100.000.000 lalu input biaya Rp5.000.000 | Sisa alokasi tampil Rp95.000.000 | |
 | VER-01 | Verifikasi setuju | PPTK membuka kegiatan DIAJUKAN lalu menyetujui | Status berubah menjadi aktif/diverifikasi | |
 | VER-01A | Saldo setelah verifikasi | Setelah VER-01, buka Pos Anggaran | Realisasi bertambah dan sisa pagu berkurang sesuai rincian biaya | |
 | VER-02 | Verifikasi tolak | PPTK menolak tanpa catatan | Sistem menolak aksi dan meminta catatan | |
@@ -82,6 +88,8 @@ untuk setiap skenario.
 - Tidak ada data pos ganda yang tidak diperlukan.
 - Tahun anggaran pada kegiatan selalu terlihat pada rincian.
 - Pagu, realisasi, dan sisa konsisten.
+- Satu kegiatan dapat memiliki beberapa alokasi pos tanpa menggandakan realisasi.
+- Kegiatan rapat/fasilitas dapat mencatat biaya umum tanpa peserta perjalanan dinas.
 - Pengguna hanya dapat menjalankan fungsi sesuai role.
 - Kegiatan tidak dapat diajukan jika data wajib atau rincian biaya belum lengkap.
 - Export menampilkan tahun dan data yang sama dengan layar.

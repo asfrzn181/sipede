@@ -1,8 +1,8 @@
 <!-- Header Menu -->
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 d-print-none">
   <div>
-    <h1 class="h5 fw-bold text-dark mb-0">Rekapitulasi Perjalanan Dinas</h1>
-    <p class="text-muted small mb-0">Rekap data perjalanan dinas per rentang periode tanggal (date range) beserta rincian anggarannya.</p>
+    <h1 class="h5 fw-bold text-dark mb-0">Rekap Realisasi Anggaran</h1>
+    <p class="text-muted small mb-0">Ringkasan kegiatan, peserta, dan total realisasi anggaran berdasarkan periode yang dipilih.</p>
   </div>
   <div class="d-flex gap-2">
     <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="window.print()">

@@ -59,7 +59,7 @@
         <a class="nav-link <?= ($cClass === 'dashboard') ? 'active' : '' ?>" href="<?= site_url('dashboard') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-speedometer2"></i>
-          <span class="menu-title">Dashboard</span>
+          <span class="menu-title">Dashboard Penyerapan</span>
         </a>
         <?php endif; ?>
 
@@ -80,18 +80,37 @@
         <?php endif; ?>
 
         <?php if(can('kegiatan.view_all') || can('kegiatan.view_own') || can('laporan.view_all') || can('laporan.view_own')): ?>
+        <div class="nav-section">LAPORAN &amp; ANALITIK</div>
         <a class="nav-link <?= ($cClass === 'rekapitulasi') ? 'active' : '' ?>" href="<?= site_url('rekapitulasi') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-receipt-cutoff"></i>
-          <span class="menu-title">Rekapitulasi</span>
+          <span class="menu-title">Rekap Realisasi Anggaran</span>
         </a>
         <?php endif; ?>
 
         <?php if(can('laporan.view_all') || can('laporan.view_own')): ?>
-        <a class="nav-link <?= ($cClass === 'laporan') ? 'active' : '' ?>" href="<?= site_url('laporan') ?>">
+        <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'index') ? 'active' : '' ?>" href="<?= site_url('laporan') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
-          <i class="bi bi-file-earmark-bar-graph"></i>
-          <span class="menu-title">Laporan</span>
+          <i class="bi bi-pie-chart"></i>
+          <span class="menu-title">Per Komponen Biaya</span>
+        </a>
+        <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'anggota') ? 'active' : '' ?>" href="<?= site_url('laporan/anggota') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-person-vcard"></i>
+          <span class="menu-title">Per Anggota DPRD</span>
+        </a>
+        <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'pos') ? 'active' : '' ?>" href="<?= site_url('laporan/pos') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-wallet2"></i>
+          <span class="menu-title">Per Pos Anggaran</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if(can('kegiatan.verify') || can('audit.view')): ?>
+        <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'riwayat') ? 'active' : '' ?>" href="<?= site_url('laporan/riwayat') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-shield-check"></i>
+          <span class="menu-title">History Verifikasi &amp; Audit</span>
         </a>
         <?php endif; ?>
 

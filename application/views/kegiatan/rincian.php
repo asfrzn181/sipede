@@ -135,18 +135,75 @@
         <small class="text-muted d-block">Tahun Anggaran yang Digunakan</small>
         <span class="fw-bold text-primary"><i class="bi bi-calendar3 me-1"></i><?= (int)($kegiatan['tahun_row']['tahun'] ?? 0) ?></span>
       </div>
+      <div class="col-12 col-md-4">
+        <small class="text-muted d-block">Jenis Kegiatan</small>
+        <span class="fw-bold text-primary"><i class="bi bi-diagram-3 me-1"></i><?= html_escape($kegiatan['jenis_kegiatan_nama'] ?? 'Perjalanan Dinas') ?></span>
+        <?php if (!empty($kegiatan['subjenis_kegiatan'])): ?><span class="small text-muted d-block"><?= html_escape($kegiatan['subjenis_kegiatan']) ?></span><?php endif; ?>
+      </div>
     </div>
 
-    <!-- Ringkasan Total & Pembilang -->
+    <!-- Ringkasan Dana Awal, Realisasi Nota, dan Selisih -->
     <div class="p-3 bg-light rounded-3 mt-3 border d-flex flex-wrap justify-content-between align-items-center gap-3">
       <div>
-        <span class="text-muted small d-block">Total Anggaran Surat Tugas:</span>
-        <h4 class="fw-bold text-primary mb-0"><?= rupiah($kegiatan['grand_total']) ?></h4>
+        <span class="text-muted small d-block">Total Dana Awal:</span>
+        <h4 class="fw-bold text-primary mb-0"><?= rupiah($kegiatan['total_dana_awal'] ?? 0) ?></h4>
+      </div>
+      <div>
+        <span class="text-muted small d-block">Total Realisasi Nota:</span>
+        <h4 class="fw-bold text-success mb-0"><?= rupiah($kegiatan['grand_total']) ?></h4>
       </div>
       <div class="text-md-end">
-        <span class="text-muted small d-block">Terbilang:</span>
-        <span class="fw-semibold text-success fst-italic">"<?= terbilang_indo($kegiatan['grand_total']) ?>"</span>
+        <span class="text-muted small d-block">Total Selisih:</span>
+        <h4 class="fw-bold text-dark mb-0"><?= rupiah(($kegiatan['total_dana_awal'] ?? 0) - $kegiatan['grand_total']) ?></h4>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section: Alokasi Pagu Kegiatan -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-wallet2 text-primary fs-5"></i>
+      <span>Alokasi Pagu Kegiatan</span>
+      <span class="badge text-bg-light border"><?= count($kegiatan['alokasi_anggaran'] ?? array()) ?> Pos</span>
+    </div>
+    <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?>
+    <button class="btn btn-sm btn-primary" id="btnTambahAlokasi"><i class="bi bi-plus-lg me-1"></i>Tambah Pos</button>
+    <?php endif; ?>
+  </div>
+  <div class="card-body p-3">
+    <p class="small text-muted mb-3">Satu kegiatan dapat menggunakan beberapa pos anggaran. Nilai alokasi adalah batas dana kegiatan; realisasi berasal dari biaya umum atau rincian peserta.</p>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Pos Anggaran</th><th>Jenis</th><th class="text-end">Alokasi</th><th class="text-end">Realisasi</th><th class="text-end">Sisa Alokasi</th><th class="text-end">Aksi</th></tr>
+        </thead>
+        <tbody>
+        <?php if(empty($kegiatan['alokasi_anggaran'])): ?>
+          <tr><td colspan="6" class="text-center text-muted py-3">Belum ada pos anggaran yang dialokasikan.</td></tr>
+        <?php else: foreach($kegiatan['alokasi_anggaran'] as $alokasi): ?>
+          <?php $sisaAlokasi = (float)$alokasi['nilai_alokasi'] - (float)$alokasi['realisasi']; ?>
+          <tr>
+            <td><strong><?= html_escape($alokasi['pos_nama']) ?></strong><div><code><?= html_escape($alokasi['pos_kode']) ?></code></div><?php if($alokasi['keterangan']): ?><small class="text-muted"><?= html_escape($alokasi['keterangan']) ?></small><?php endif; ?></td>
+            <td><span class="badge text-bg-light border"><?= html_escape($alokasi['jenis_anggaran_nama'] ?: $alokasi['pos_tipe']) ?></span></td>
+            <td class="text-end fw-semibold"><?= rupiah($alokasi['nilai_alokasi']) ?></td>
+            <td class="text-end text-success"><?= rupiah($alokasi['realisasi']) ?></td>
+            <td class="text-end <?= $sisaAlokasi < 0 ? 'text-danger' : 'text-primary' ?>"><?= rupiah($sisaAlokasi) ?></td>
+            <td class="text-end text-nowrap">
+              <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?>
+              <button type="button" class="btn btn-sm btn-outline-primary js-edit-alokasi" data-alokasi='<?= json_encode(array(
+                'id' => encrypt_id($alokasi['id']), 'pos_anggaran_id' => encrypt_id($alokasi['pos_anggaran_id']),
+                'nilai_alokasi' => (float)$alokasi['nilai_alokasi'], 'keterangan' => $alokasi['keterangan']
+              ), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>'><i class="bi bi-pencil"></i></button>
+              <?php endif; ?>
+              <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?><button type="button" class="btn btn-sm btn-outline-success js-tambah-biaya-umum" data-id="<?= encrypt_id($alokasi['id']) ?>" data-nama="<?= html_escape($alokasi['pos_nama']) ?>"><i class="bi bi-receipt"></i></button><?php endif; ?>
+              <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?><button type="button" class="btn btn-sm btn-outline-danger js-hapus-alokasi" data-id="<?= encrypt_id($alokasi['id']) ?>"><i class="bi bi-trash"></i></button><?php endif; ?>
+            </td>
+          </tr>
+        <?php endforeach; endif; ?>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -156,7 +213,7 @@
   <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-2">
       <i class="bi bi-people text-primary fs-5"></i>
-      <span>Daftar Peserta &amp; Pendamping Perjalanan Dinas</span>
+        <span>Peserta / Rincian Pelaksana Kegiatan</span>
       <span class="badge text-bg-light border"><?= count($kegiatan['peserta']) ?> Orang</span>
     </div>
     <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK')) && empty($is_own_scope)): ?>
@@ -179,6 +236,9 @@
         $encKpId = encrypt_id($p['id']); 
         $encPenerimaId = encrypt_id($p['penerima_id']);
         $isDprd = $p['tipe'] === 'DPRD';
+        $danaAwalPeserta = (float)($p['dana_awal'] ?? 0);
+        $realisasiNotaPeserta = (float)($p['realisasi_nota'] ?? $p['total_biaya'] ?? 0);
+        $selisihDanaAwalPeserta = (float)($p['selisih_dana_awal'] ?? ($danaAwalPeserta - $realisasiNotaPeserta));
       ?>
       <div class="border rounded-3 p-3 mb-3 bg-white shadow-sm participant-item" id="peserta_<?= $encKpId ?>">
         <!-- Header Peserta -->
@@ -195,14 +255,11 @@
                 Pos Anggaran: <strong class="text-dark"><?= html_escape($p['pos_nama'] ?: ($isDprd ? 'Pos DPRD: ' . $p['nama'] : 'Master Anggaran Aktif')) ?></strong>
               </span>
               <?php if(!empty($p['alasan_pengalihan'])): ?>
-                <span class="badge text-bg-warning" title="Alasan: <?= html_escape($p['alasan_pengalihan']) ?>">
-                  <i class="bi bi-arrow-left-right me-1"></i>Dialihkan: <?= html_escape($p['alasan_pengalihan']) ?>
+                <span class="badge text-bg-light border text-dark" title="Keterangan anggaran: <?= html_escape($p['alasan_pengalihan']) ?>">
+                  <i class="bi bi-chat-left-text me-1"></i>Keterangan tersedia
                 </span>
               <?php endif; ?>
             </div>
-            <span class="fw-bold text-primary fs-6">
-              <?= rupiah($p['total_biaya']) ?>
-            </span>
             <?php if($can_update && in_array($status, array('DRAFT', 'DITOLAK'))): ?>
             <div class="btn-group btn-group-sm">
               <?php
@@ -211,6 +268,7 @@
                   'penerima_id'       => $encPenerimaId,
                   'pos_anggaran_id'   => !empty($p['pos_anggaran_id']) ? encrypt_id($p['pos_anggaran_id']) : '',
                   'alasan_pengalihan' => $p['alasan_pengalihan'] ?? '',
+                  'dana_awal'         => $danaAwalPeserta,
                   'nama'              => $p['nama'],
                   'tipe'              => $p['tipe'],
                   'sumber_dana_id'    => $p['sumber_dana_id'],
@@ -231,6 +289,27 @@
               </button>
             </div>
             <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-12 col-md-4">
+            <div class="p-2 rounded border bg-primary bg-opacity-10">
+              <span class="small text-muted d-block">Dana Awal</span>
+              <strong class="text-primary"><?= rupiah($danaAwalPeserta) ?></strong>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="p-2 rounded border bg-success bg-opacity-10">
+              <span class="small text-muted d-block">Realisasi Nota</span>
+              <strong class="text-success"><?= rupiah($realisasiNotaPeserta) ?></strong>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="p-2 rounded border <?= $selisihDanaAwalPeserta < 0 ? 'bg-danger bg-opacity-10' : 'bg-warning bg-opacity-10' ?>">
+              <span class="small text-muted d-block">Selisih / Pengembalian</span>
+              <strong class="<?= $selisihDanaAwalPeserta < 0 ? 'text-danger' : 'text-dark' ?>"><?= rupiah($selisihDanaAwalPeserta) ?></strong>
+            </div>
           </div>
         </div>
 
@@ -316,6 +395,18 @@
               <input class="form-control" name="tempat" value="<?= html_escape($kegiatan['tempat']) ?>" required>
             </div>
             <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Jenis Kegiatan <span class="text-danger">*</span></label>
+              <select class="form-select" name="jenis_kegiatan_id" required>
+                <?php foreach (($jenis_kegiatan ?? array()) as $jk): ?>
+                  <option value="<?= (int)$jk['id'] ?>" <?= (int)$jk['id'] === (int)($kegiatan['jenis_kegiatan_id'] ?? 0) ? 'selected' : '' ?>><?= html_escape($jk['nama']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold">Subjenis / Kategori</label>
+              <input class="form-control" name="subjenis_kegiatan" value="<?= html_escape($kegiatan['subjenis_kegiatan'] ?? '') ?>" placeholder="Contoh: Rapat Komisi I">
+            </div>
+            <div class="col-12 col-md-6">
               <label class="form-label small fw-semibold">Status</label>
               <select class="form-select" name="status">
                 <option value="DRAFT" <?= $status === 'DRAFT' ? 'selected' : '' ?>>DRAFT</option>
@@ -335,6 +426,59 @@
             <span>Simpan Perubahan</span>
           </button>
         </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alokasi Pagu Kegiatan -->
+<div class="modal fade" id="modalAlokasi" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formAlokasi">
+        <input type="hidden" name="kegiatan_id" value="<?= $encId ?>">
+        <input type="hidden" name="id" id="alokasiIdInput">
+        <div class="modal-header bg-light"><h5 class="modal-title fw-bold" id="modalAlokasiTitle"><i class="bi bi-wallet2 text-primary me-1"></i> Alokasi Pagu Kegiatan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Pos Anggaran <span class="text-danger">*</span></label>
+            <select class="form-select" name="pos_anggaran_id" id="alokasiPosSelect" required>
+              <option value="">-- Pilih Pos Anggaran --</option>
+              <?php foreach($pos_anggaran as $pp): ?>
+              <option value="<?= encrypt_id($pp['id']) ?>"><?= html_escape($pp['nama']) ?> (Sisa: <?= rupiah($pp['sisa']) ?>)</option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Nilai Alokasi / Pagu Kegiatan <span class="text-danger">*</span></label>
+            <input type="text" class="form-control input-rupiah" name="nilai_alokasi" id="inpNilaiAlokasi" required placeholder="Contoh: 100.000.000">
+          </div>
+          <div>
+            <label class="form-label small fw-semibold">Keterangan</label>
+            <textarea class="form-control" name="keterangan" id="inpKeteranganAlokasi" rows="3" placeholder="Contoh: Alokasi Rapat Komisi I bulan Januari"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan Alokasi</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Biaya Umum Non-Peserta -->
+<div class="modal fade" id="modalBiayaUmum" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formBiayaUmum">
+        <input type="hidden" name="kegiatan_id" value="<?= $encId ?>">
+        <input type="hidden" name="kegiatan_anggaran_id" id="biayaUmumAlokasiId">
+        <div class="modal-header bg-light"><h5 class="modal-title fw-bold"><i class="bi bi-receipt text-success me-1"></i> Tambah Biaya Kegiatan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+          <p class="small text-muted">Dipakai untuk rapat/fasilitas yang tidak dibebankan kepada peserta perjalanan dinas.</p>
+          <div class="mb-3"><label class="form-label small fw-semibold">Alokasi Anggaran</label><input class="form-control" id="biayaUmumAlokasiLabel" readonly></div>
+          <div class="mb-3"><label class="form-label small fw-semibold">Komponen Biaya <span class="text-danger">*</span></label><select class="form-select" name="jenis_biaya_id" required><option value="">-- Pilih Komponen --</option><?php foreach($jenis_biaya as $jb): if(!$jb['is_active']) continue; ?><option value="<?= (int)$jb['id'] ?>"><?= html_escape($jb['nama']) ?> (<?= html_escape($jb['satuan'] ?: '-') ?>)</option><?php endforeach; ?></select></div>
+          <div class="row g-3"><div class="col-5"><label class="form-label small fw-semibold">Volume</label><input type="number" min="0.01" step="0.01" class="form-control" name="volume" value="1" required></div><div class="col-7"><label class="form-label small fw-semibold">Tarif Satuan</label><input type="text" class="form-control input-rupiah" name="tarif" required placeholder="0"></div></div>
+        </div>
+        <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-success"><i class="bi bi-save me-1"></i>Simpan Biaya</button></div>
       </form>
     </div>
   </div>
@@ -407,18 +551,25 @@
               </div>
             </div>
 
-            <!-- Input Alasan Pengalihan Pos -->
-            <div class="col-12" id="boxAlasanPengalihan" style="display: none;">
-              <div class="p-3 border border-warning rounded-3 bg-warning bg-opacity-10">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-bold">Dana Awal / Panjar (Rp) <span class="text-danger">*</span></label>
+              <input type="text" class="form-control input-rupiah" name="dana_awal" id="inpDanaAwal"
+                     placeholder="Contoh: 100.000.000" inputmode="numeric" required>
+              <div class="form-text small text-muted">Dana yang diberikan atau dialokasikan di muka untuk peserta ini.</div>
+            </div>
+
+            <!-- Keterangan anggaran selalu wajib, baik pos sendiri maupun pos lain -->
+            <div class="col-12" id="boxAlasanPengalihan">
+              <div class="p-3 border border-info rounded-3 bg-info bg-opacity-10">
                 <div class="d-flex align-items-center gap-2 mb-1">
-                  <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
-                  <strong class="text-dark">Pengalihan Pos Anggaran Terdeteksi</strong>
+                  <i class="bi bi-chat-left-text-fill text-info fs-5"></i>
+                  <strong class="text-dark">Keterangan Anggaran <span class="text-danger">*</span></strong>
                 </div>
                 <p class="small text-muted mb-2">
-                  Anda membebankan kegiatan ini ke pos yang berbeda dari pos bawaan personel. Berikan alasan pengalihan pos (wajib diisi):
+                  Jelaskan sumber penggunaan anggaran atau catatan pembebanan dana. Keterangan wajib diisi untuk semua peserta.
                 </p>
-                <input type="text" class="form-control form-control-sm" name="alasan_pengalihan" id="inpAlasanPengalihan"
-                       placeholder="Contoh: Pemegang pos berhalangan dinas, sehingga digantikan oleh personel ini.">
+                <textarea class="form-control form-control-sm" name="alasan_pengalihan" id="inpAlasanPengalihan" rows="2" required
+                          placeholder="Contoh: Anggaran kegiatan melekat pada pos anggota yang bersangkutan."></textarea>
               </div>
             </div>
           </div>
@@ -451,8 +602,14 @@
 
             <!-- Total Per Peserta -->
             <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-              <span class="fw-semibold text-muted">Total Anggaran Peserta Ini:</span>
-              <h5 class="fw-bold text-primary mb-0" id="totalPesertaModal">Rp 0</h5>
+              <div>
+                <span class="fw-semibold text-muted d-block">Realisasi Nota / Rincian:</span>
+                <h5 class="fw-bold text-success mb-0" id="totalPesertaModal">Rp 0</h5>
+              </div>
+              <div class="text-end">
+                <span class="small text-muted d-block">Selisih Dana Awal</span>
+                <strong class="fw-bold text-dark" id="selisihDanaModal">Rp 0</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -529,6 +686,20 @@ $(function(){
       total += sub;
     });
     $('#totalPesertaModal').text(formatRupiah(total));
+    var danaAwal = parseNominal($('#inpDanaAwal').val());
+    var selisih = danaAwal - total;
+    $('#selisihDanaModal').text(formatRupiah(selisih));
+    $('#selisihDanaModal').toggleClass('text-danger', selisih < 0).toggleClass('text-dark', selisih >= 0);
+  }
+
+  function parseNominal(value) {
+    var raw = String(value || '').replace(/\D/g, '');
+    return raw ? parseFloat(raw) : 0;
+  }
+
+  function formatNominalInput(value) {
+    var nominal = parseNominal(value);
+    return nominal > 0 ? nominal.toLocaleString('id-ID') : '';
   }
 
   var defaultPosId = '';
@@ -540,13 +711,13 @@ $(function(){
   }
 
   function hideAlasanPengalihan(clearValue) {
-    $('#boxAlasanPengalihan').hide();
-    $('#inpAlasanPengalihan').prop('required', false);
+    $('#boxAlasanPengalihan').show();
+    $('#inpAlasanPengalihan').prop('required', true);
     if (clearValue !== false) $('#inpAlasanPengalihan').val('');
   }
 
   function showAlasanPengalihan() {
-    $('#boxAlasanPengalihan').stop(true, true).slideDown(200);
+    $('#boxAlasanPengalihan').show();
     $('#inpAlasanPengalihan').prop('required', true);
   }
 
@@ -558,7 +729,7 @@ $(function(){
 
     if (!penerimaId) {
       $('#boxPosAnggaran').hide();
-      hideAlasanPengalihan();
+      showAlasanPengalihan();
       return;
     }
 
@@ -584,19 +755,8 @@ $(function(){
   }
 
   function checkPengalihanPos() {
-    if (!currentTipePeserta) {
-      hideAlasanPengalihan();
-      return;
-    }
-    var selectedPos = $('#posAnggaranSelect').val();
-    var selectedPosNama = normalizePosName($('#posAnggaranSelect').find(':selected').data('pos-nama'));
-    var satuKelompokJabatan = defaultPosNama && selectedPosNama && defaultPosNama === selectedPosNama;
-    if (defaultPosId && selectedPos && selectedPos !== defaultPosId && !satuKelompokJabatan) {
-      showAlasanPengalihan();
-    } else {
-      $('#boxAlasanPengalihan').stop(true, true).slideUp(200);
-      $('#inpAlasanPengalihan').prop('required', false).val('');
-    }
+    // Keterangan selalu wajib, baik menggunakan anggaran bawaan maupun pos lain.
+    showAlasanPengalihan();
   }
 
   $('#penerimaSelect').on('change', handlePenerimaChange);
@@ -636,6 +796,7 @@ $(function(){
     $('#modalPesertaTitle').html('<i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Peserta / Pendamping');
     $('#tbodyBiayaRows').empty();
     $('#tbodyBiayaRows').append(createBiayaRow('', 1, 0));
+    $('#inpDanaAwal').val('');
     hitungTotalModal();
     bootstrap.Modal.getOrCreateInstance('#modalPeserta').show();
   });
@@ -646,28 +807,22 @@ $(function(){
     $('#formPeserta')[0].reset();
     hideAlasanPengalihan();
     $('#pesertaIdInput').val(p.id);
+    $('#inpDanaAwal').val(formatNominalInput(p.dana_awal || 0));
     currentTipePeserta = p.tipe || '';
     $('#penerimaSelect').val(p.penerima_id);
     if ($.fn.select2 && $('#penerimaSelect').hasClass("select2-hidden-accessible")) {
       $('#penerimaSelect').trigger('change');
     }
 
-    if (p.tipe === 'PENDAMPING') {
-      $('#boxPosAnggaran').show();
-      if (p.pos_anggaran_id) {
-        $('#posAnggaranSelect').val(p.pos_anggaran_id);
-        if ($.fn.select2 && $('#posAnggaranSelect').hasClass("select2-hidden-accessible")) {
-          $('#posAnggaranSelect').trigger('change');
-        }
+    $('#boxPosAnggaran').show();
+    if (p.pos_anggaran_id) {
+      $('#posAnggaranSelect').val(p.pos_anggaran_id);
+      if ($.fn.select2 && $('#posAnggaranSelect').hasClass("select2-hidden-accessible")) {
+        $('#posAnggaranSelect').trigger('change');
       }
-      if (p.alasan_pengalihan) {
-        $('#inpAlasanPengalihan').val(p.alasan_pengalihan);
-        showAlasanPengalihan();
-      }
-    } else {
-      $('#boxPosAnggaran').show();
-      hideAlasanPengalihan();
     }
+    if (p.alasan_pengalihan) $('#inpAlasanPengalihan').val(p.alasan_pengalihan);
+    showAlasanPengalihan();
 
     $('#modalPesertaTitle').html('<i class="bi bi-pencil-square text-primary me-1"></i> Edit Peserta: ' + escapeHtml(p.nama));
 
@@ -700,6 +855,11 @@ $(function(){
 
   // Input volume & tarif live calculation & pembilang text
   $(document).on('input', '.row-volume', hitungTotalModal);
+  $(document).on('input', '#inpDanaAwal', function(){
+    var raw = $(this).val().replace(/\D/g, '');
+    $(this).val(raw ? parseInt(raw, 10).toLocaleString('id-ID') : '');
+    hitungTotalModal();
+  });
   $(document).on('input', '.row-tarif-display', function(){
     var raw = $(this).val().replace(/\D/g, '');
     var num = raw ? parseInt(raw, 10) : 0;
@@ -734,12 +894,15 @@ $(function(){
     });
 
     var posId = $('#posAnggaranSelect').val() || null;
-    var alasan = $('#inpAlasanPengalihan').val() || null;
-
-    var selectedPosNamaSaatSimpan = normalizePosName($('#posAnggaranSelect').find(':selected').data('pos-nama'));
-    var satuKelompokSaatSimpan = defaultPosNama && selectedPosNamaSaatSimpan && defaultPosNama === selectedPosNamaSaatSimpan;
-    if (defaultPosId && posId && posId !== defaultPosId && !satuKelompokSaatSimpan && !alasan) {
-      App.toast('Alasan pengalihan pos anggaran wajib diisi saat memilih pos lain.', 'warning');
+    var alasan = $.trim($('#inpAlasanPengalihan').val() || '');
+    var danaAwal = parseNominal($('#inpDanaAwal').val());
+    if (!danaAwal && $('#inpDanaAwal').val().trim() !== '0') {
+      App.toast('Dana awal wajib diisi.', 'warning');
+      $('#inpDanaAwal').focus();
+      return;
+    }
+    if (!alasan) {
+      App.toast('Keterangan anggaran wajib diisi.', 'warning');
       $('#inpAlasanPengalihan').focus();
       return;
     }
@@ -750,6 +913,7 @@ $(function(){
       penerima_id:       penerimaId,
       pos_anggaran_id:   posId,
       alasan_pengalihan: alasan,
+      dana_awal:         danaAwal,
       sumber_dana_id:    null,
       biaya:             biayaList
     };
@@ -762,6 +926,96 @@ $(function(){
       if (r.status) {
         bootstrap.Modal.getOrCreateInstance('#modalPeserta').hide();
         setTimeout(function(){ location.reload(); }, 500);
+      }
+    });
+  });
+
+  // Alokasi pagu kegiatan multi-pos
+  $('#btnTambahAlokasi').on('click', function(){
+    $('#formAlokasi')[0].reset();
+    $('#alokasiIdInput').val('');
+    $('#modalAlokasiTitle').html('<i class="bi bi-wallet2 text-primary me-1"></i> Alokasi Pagu Kegiatan');
+    bootstrap.Modal.getOrCreateInstance('#modalAlokasi').show();
+  });
+
+  $(document).on('click', '.js-edit-alokasi', function(){
+    var a = $(this).data('alokasi');
+    $('#alokasiIdInput').val(a.id);
+    $('#alokasiPosSelect').val(a.pos_anggaran_id);
+    $('#inpNilaiAlokasi').val(formatNominalInput(a.nilai_alokasi || 0));
+    $('#inpKeteranganAlokasi').val(a.keterangan || '');
+    $('#modalAlokasiTitle').html('<i class="bi bi-pencil-square text-primary me-1"></i> Edit Alokasi Pagu');
+    bootstrap.Modal.getOrCreateInstance('#modalAlokasi').show();
+  });
+
+  $('#formAlokasi').on('submit', function(e){
+    e.preventDefault();
+    var nilai = parseNominal($('#inpNilaiAlokasi').val());
+    if (!$('#alokasiPosSelect').val() || nilai < 0) {
+      App.toast('Pos dan nilai alokasi wajib diisi.', 'warning');
+      return;
+    }
+    App.ajax({
+      url: window.APP.baseUrl + 'kegiatan/save_alokasi',
+      data: JSON.stringify({
+        kegiatan_id: $('[name="kegiatan_id"]').first().val(),
+        id: $('#alokasiIdInput').val() || null,
+        pos_anggaran_id: $('#alokasiPosSelect').val(),
+        nilai_alokasi: nilai,
+        keterangan: $.trim($('#inpKeteranganAlokasi').val() || '')
+      }),
+      contentType: 'application/json'
+    }).done(function(r){
+      if (r.status) {
+        bootstrap.Modal.getOrCreateInstance('#modalAlokasi').hide();
+        setTimeout(function(){ location.reload(); }, 400);
+      }
+    });
+  });
+
+  $(document).on('click', '.js-hapus-alokasi', function(){
+    var id = $(this).data('id');
+    Swal.fire({
+      title: 'Hapus alokasi?',
+      text: 'Alokasi hanya dapat dihapus jika belum dipakai peserta atau biaya kegiatan.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal', confirmButtonColor: '#dc2626'
+    }).then(function(r){
+      if (!r.isConfirmed) return;
+      App.ajax({url: window.APP.baseUrl + 'kegiatan/delete_alokasi/' + id}).done(function(res){
+        if (res.status) setTimeout(function(){ location.reload(); }, 400);
+      });
+    });
+  });
+
+  $(document).on('click', '.js-tambah-biaya-umum', function(){
+    $('#formBiayaUmum')[0].reset();
+    $('#biayaUmumAlokasiId').val($(this).data('id'));
+    $('#biayaUmumAlokasiLabel').val($(this).data('nama') || 'Alokasi terpilih');
+    bootstrap.Modal.getOrCreateInstance('#modalBiayaUmum').show();
+  });
+
+  $('#formBiayaUmum').on('submit', function(e){
+    e.preventDefault();
+    var tarif = parseNominal($('#formBiayaUmum [name="tarif"]').val());
+    var volume = parseFloat($('#formBiayaUmum [name="volume"]').val()) || 0;
+    if (!$('#biayaUmumAlokasiId').val() || !$('#formBiayaUmum [name="jenis_biaya_id"]').val() || volume <= 0 || tarif < 0) {
+      App.toast('Lengkapi alokasi, komponen, volume, dan tarif.', 'warning');
+      return;
+    }
+    App.ajax({
+      url: window.APP.baseUrl + 'kegiatan/save_biaya_umum',
+      data: JSON.stringify({
+        kegiatan_id: $('[name="kegiatan_id"]').first().val(),
+        kegiatan_anggaran_id: $('#biayaUmumAlokasiId').val(),
+        jenis_biaya_id: $('#formBiayaUmum [name="jenis_biaya_id"]').val(),
+        volume: volume, tarif: tarif
+      }),
+      contentType: 'application/json'
+    }).done(function(r){
+      if (r.status) {
+        bootstrap.Modal.getOrCreateInstance('#modalBiayaUmum').hide();
+        setTimeout(function(){ location.reload(); }, 400);
       }
     });
   });

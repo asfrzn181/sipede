@@ -1,1 +1,8 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h5 fw-bold text-dark mb-1">Dashboard Penyerapan Anggaran</h1>
+    <p class="text-muted small mb-0">Memantau pagu, realisasi, sisa anggaran, tren bulanan, dan kegiatan terbaru secara ringkas.</p>
+  </div>
+  <span class="badge text-bg-light border text-muted">Ringkasan tahun aktif</span>
+</div>
 <div id="dashboard" data-url="<?= site_url('dashboard/data') ?>"><div class="row g-3 mb-4"><div class="col-12 col-md-4"><div class="stat-card"><span>Total Pagu</span><strong id="statPagu">-</strong></div></div><div class="col-12 col-md-4"><div class="stat-card"><span>Realisasi</span><strong id="statRealisasi">-</strong></div></div><div class="col-12 col-md-4"><div class="stat-card"><span>Sisa Anggaran</span><strong id="statSisa">-</strong></div></div></div><div class="row g-4"><div class="col-12 col-xl-8"><div class="card"><div class="card-header">Realisasi per Bulan</div><div class="card-body"><canvas id="monthlyChart" height="120"></canvas></div></div></div><div class="col-12 col-xl-4"><div class="card"><div class="card-header">Sisa Terkecil</div><div class="list-group list-group-flush" id="smallestList"></div></div></div><div class="col-12"><div class="card shadow-sm"><div class="card-header bg-white fw-bold"><i class="bi bi-clock-history me-1 text-primary"></i> Kegiatan Terbaru</div><div class="card-body p-3"><div class="table-responsive"><table class="table table-hover align-middle mb-0 datatable" id="latestTable"><thead class="table-light"><tr><th>Kegiatan</th><th>Tanggal</th><th>Tempat</th><th>Status</th></tr></thead><tbody></tbody></table></div></div></div></div></div></div>

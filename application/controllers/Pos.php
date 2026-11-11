@@ -50,6 +50,7 @@ class Pos extends MY_Controller
 
         // Daftar pendamping aktif (untuk form penugasan)
         $pendamping = $this->Penerima_model->all_by_tipe('PENDAMPING');
+        $jenisAnggaran = $this->db->where('is_active', 1)->order_by('urutan')->order_by('nama')->get('jenis_anggaran')->result_array();
 
         $this->load->view('layout/main', [
             'title' => 'Pos Anggaran ' . $tahun['tahun'],
@@ -62,6 +63,7 @@ class Pos extends MY_Controller
                 'totalRealisasi' => $totalRealisasi,
                 'totalSisa'      => $totalSisa,
                 'pendamping'     => $pendamping,
+                'jenis_anggaran' => $jenisAnggaran,
                 'can_manage'     => can('anggaran.manage'),
             ]
         ]);
@@ -184,6 +186,21 @@ class Pos extends MY_Controller
             'selisih'   => $selisih,
             'sisa_baru' => $sisaBaru,
         ]);
+    }
+
+    public function set_jenis_anggaran(): void {
+        $this->require_permission('anggaran.manage');
+        $posId = decrypt_id($this->input->post('pos_id'));
+        $jenisId = (int)$this->input->post('jenis_anggaran_id');
+        if (!$posId || !$jenisId) $this->respond(false, 'Pos atau jenis anggaran tidak valid.', [], [], 422);
+        $pos = $this->Pos_model->find($posId);
+        $jenis = $this->db->get_where('jenis_anggaran', ['id' => $jenisId, 'is_active' => 1])->row_array();
+        if (!$pos || !$jenis) $this->respond(false, 'Pos atau jenis anggaran tidak ditemukan.', [], [], 404);
+        $tahun = $this->Tahun_model->find((int)$pos['tahun_anggaran_id']);
+        if (!$tahun || !empty($tahun['is_locked'])) $this->respond(false, 'Tahun anggaran sudah dikunci.', [], [], 422);
+        $this->db->where('id', $posId)->update('pos_anggaran', ['jenis_anggaran_id' => $jenisId, 'updated_at' => date('Y-m-d H:i:s')]);
+        $this->Audit_model->write('POS_ANGGARAN', $posId, 'UBAH_JENIS_ANGGARAN', ['jenis_anggaran_id' => $pos['jenis_anggaran_id'] ?? null], ['jenis_anggaran_id' => $jenisId, 'jenis_nama' => $jenis['nama']], (int)$this->user['id']);
+        $this->respond(true, 'Jenis anggaran pos berhasil diperbarui.');
     }
 
     // ─── Penugasan Pos (PENDAMPING) ──────────────────────────────────

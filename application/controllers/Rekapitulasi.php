@@ -55,7 +55,7 @@ class Rekapitulasi extends MY_Controller
         }
 
         $this->load->view('layout/main', array(
-            'title' => 'Rekapitulasi Perjalanan Dinas',
+            'title' => 'Rekap Realisasi Anggaran',
             'view'  => 'rekapitulasi/index',
             'data'  => array(
                 'filter'          => $filter,

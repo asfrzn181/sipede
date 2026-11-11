@@ -81,13 +81,15 @@
             <th>Jabatan</th>
             <th>Beban Pos Anggaran</th>
             <th>Rincian Biaya</th>
-            <th style="width: 140px;" class="text-end">Jumlah (Rp)</th>
+            <th style="width: 125px;" class="text-end">Dana Awal</th>
+            <th style="width: 125px;" class="text-end">Realisasi Nota</th>
+            <th style="width: 125px;" class="text-end">Selisih</th>
           </tr>
         </thead>
         <tbody>
           <?php if(empty($kegiatan['peserta'])): ?>
             <tr>
-              <td colspan="7" class="text-center text-muted py-3">Belum ada data peserta perjalanan dinas.</td>
+              <td colspan="10" class="text-center text-muted py-3">Belum ada data peserta perjalanan dinas.</td>
             </tr>
           <?php else: ?>
             <?php foreach($kegiatan['peserta'] as $i => $p): ?>
@@ -105,8 +107,8 @@
               <td class="small">
                 <strong><?= html_escape($p['pos_nama'] ?: ($p['tipe'] === 'DPRD' ? 'Pos DPRD: ' . $p['nama'] : 'Master Anggaran Aktif')) ?></strong>
                 <?php if(!empty($p['alasan_pengalihan'])): ?>
-                  <div class="text-danger small fst-italic mt-1" style="font-size: 0.72rem;">
-                    &bull; Pengalihan: <?= html_escape($p['alasan_pengalihan']) ?>
+                  <div class="text-muted small fst-italic mt-1" style="font-size: 0.72rem;">
+                    &bull; Keterangan: <?= html_escape($p['alasan_pengalihan']) ?>
                   </div>
                 <?php endif; ?>
               </td>
@@ -124,8 +126,14 @@
                   <span class="text-muted italic">-</span>
                 <?php endif; ?>
               </td>
-              <td class="text-end fw-bold">
-                <?= rupiah($p['total_biaya']) ?>
+              <td class="text-end fw-bold text-primary">
+                <?= rupiah($p['dana_awal'] ?? 0) ?>
+              </td>
+              <td class="text-end fw-bold text-success">
+                <?= rupiah($p['realisasi_nota'] ?? $p['total_biaya']) ?>
+              </td>
+              <td class="text-end fw-bold <?= (($p['selisih_dana_awal'] ?? 0) < 0) ? 'text-danger' : 'text-dark' ?>">
+                <?= rupiah($p['selisih_dana_awal'] ?? ((float)($p['dana_awal'] ?? 0) - (float)($p['total_biaya'] ?? 0))) ?>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -133,8 +141,10 @@
         </tbody>
         <tfoot style="border-top: 2px solid #000;">
           <tr class="fw-bold table-light">
-            <td colspan="6" class="text-end text-uppercase">Total Biaya Perjalanan Dinas:</td>
-            <td class="text-end fs-6 text-primary"><?= rupiah($kegiatan['grand_total']) ?></td>
+            <td colspan="7" class="text-end text-uppercase">Total Dana Awal:</td>
+            <td class="text-end fs-6 text-primary"><?= rupiah($kegiatan['total_dana_awal'] ?? 0) ?></td>
+            <td class="text-end fs-6 text-success"><?= rupiah($kegiatan['grand_total']) ?></td>
+            <td class="text-end fs-6 text-dark"><?= rupiah(($kegiatan['total_dana_awal'] ?? 0) - $kegiatan['grand_total']) ?></td>
           </tr>
         </tfoot>
       </table>

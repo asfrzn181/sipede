@@ -152,6 +152,8 @@ class Kegiatan_model extends CI_Model {
         $record = array(
             'tahun_anggaran_id'   => (int)$data['tahun_anggaran_id'],
             'nama_kegiatan'       => !empty($data['nama_kegiatan']) ? $data['nama_kegiatan'] : ($data['tema'] ?? 'Surat Tugas'),
+            'jenis_kegiatan_id'   => !empty($data['jenis_kegiatan_id']) ? (int)$data['jenis_kegiatan_id'] : null,
+            'subjenis_kegiatan'   => $data['subjenis_kegiatan'] ?? null,
             'no_surat_tugas'      => $data['no_surat_tugas'] ?? NULL,
             'tanggal_surat_tugas' => $data['tanggal_surat_tugas'] ?? NULL,
             'tema'                => $data['tema'] ?? NULL,
@@ -184,6 +186,12 @@ class Kegiatan_model extends CI_Model {
 
         // Ambil tahun anggaran
         $kegiatan['tahun_row'] = $this->db->get_where('tahun_anggaran', array('id' => $kegiatan['tahun_anggaran_id']))->row_array();
+        $jenisKegiatan = $kegiatan['jenis_kegiatan_id']
+            ? $this->db->get_where('jenis_kegiatan', array('id' => $kegiatan['jenis_kegiatan_id']))->row_array()
+            : null;
+        $kegiatan['jenis_kegiatan_nama'] = $jenisKegiatan['nama'] ?? 'Perjalanan Dinas';
+
+        $kegiatan['alokasi_anggaran'] = $this->get_alokasi_anggaran($id);
 
         // Ambil daftar peserta
         $pesertaRows = $this->db->select('kp.*, p.nama, p.tipe, p.jabatan, p.periode_mulai, p.periode_akhir,
@@ -200,6 +208,7 @@ class Kegiatan_model extends CI_Model {
 
         $peserta = array();
         $grandTotal = 0.0;
+        $totalDanaAwal = 0.0;
 
         foreach ($pesertaRows as $p) {
             // Rincian biaya peserta
@@ -216,12 +225,17 @@ class Kegiatan_model extends CI_Model {
 
             $p['biaya'] = $biayaList;
             $p['total_biaya'] = $subtotalPeserta;
+            $p['dana_awal'] = (float)($p['dana_awal'] ?? 0);
+            $p['realisasi_nota'] = $subtotalPeserta;
+            $p['selisih_dana_awal'] = $p['dana_awal'] - $subtotalPeserta;
             $grandTotal += $subtotalPeserta;
+            $totalDanaAwal += $p['dana_awal'];
             $peserta[] = $p;
         }
 
         $kegiatan['peserta'] = $peserta;
         $kegiatan['grand_total'] = $grandTotal;
+        $kegiatan['total_dana_awal'] = $totalDanaAwal;
 
         return $kegiatan;
     }
@@ -234,13 +248,17 @@ class Kegiatan_model extends CI_Model {
         $penerimaId        = (int)$data['penerima_id'];
         $posAnggaranId     = !empty($data['pos_anggaran_id']) ? (int)$data['pos_anggaran_id'] : null;
         $alasanPengalihan  = !empty($data['alasan_pengalihan']) ? trim((string)$data['alasan_pengalihan']) : null;
+        $danaAwal          = max(0, (float)($data['dana_awal'] ?? 0));
         $sumberDanaId      = !empty($data['sumber_dana_id']) ? (int)$data['sumber_dana_id'] : null;
+        $kegiatanAnggaranId = $posAnggaranId ? $this->ensure_kegiatan_anggaran($kegiatanId, $posAnggaranId, 0, $alasanPengalihan) : null;
 
         $kpData = array(
             'kegiatan_id'       => $kegiatanId,
             'penerima_id'       => $penerimaId,
             'pos_anggaran_id'   => $posAnggaranId,
+            'kegiatan_anggaran_id' => $kegiatanAnggaranId,
             'alasan_pengalihan' => $alasanPengalihan,
+            'dana_awal'        => $danaAwal,
             'sumber_dana_id'    => $sumberDanaId,
         );
 
@@ -262,10 +280,15 @@ class Kegiatan_model extends CI_Model {
             $jenisBiayaId = !empty($cost['jenis_biaya_id']) ? (int)$cost['jenis_biaya_id'] : NULL;
             $this->db->insert('kegiatan_biaya', array(
                 'kegiatan_peserta_id' => $kegiatanPesertaId,
+                'kegiatan_anggaran_id' => $kegiatanAnggaranId,
                 'jenis_biaya_id'      => $jenisBiayaId,
                 'volume'              => $volume,
                 'tarif'               => $tarif,
             ));
+        }
+
+        if ($kegiatanAnggaranId) {
+            $this->sync_alokasi_peserta($kegiatanAnggaranId);
         }
 
         // Hitung ulang total kegiatan
@@ -294,10 +317,11 @@ class Kegiatan_model extends CI_Model {
      */
     public function recalculate_total(int $kegiatanId): float {
         $sql = "SELECT COALESCE(SUM(kb.volume * kb.tarif), 0) AS grand_total
-                FROM kegiatan_peserta kp
-                JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id = kp.id
-                WHERE kp.kegiatan_id = ?";
-        $res = $this->db->query($sql, array($kegiatanId))->row_array();
+                FROM kegiatan_biaya kb
+                LEFT JOIN kegiatan_peserta kp ON kp.id = kb.kegiatan_peserta_id
+                LEFT JOIN kegiatan_anggaran ka ON ka.id = kb.kegiatan_anggaran_id
+                WHERE kp.kegiatan_id = ? OR ka.kegiatan_id = ?";
+        $res = $this->db->query($sql, array($kegiatanId, $kegiatanId))->row_array();
         $total = (float)($res['grand_total'] ?? 0);
 
         $this->db->where('id', $kegiatanId)->update('kegiatan', array(
@@ -305,6 +329,101 @@ class Kegiatan_model extends CI_Model {
             'updated_at' => date('Y-m-d H:i:s')
         ));
         return $total;
+    }
+
+    private function ensure_kegiatan_anggaran(int $kegiatanId, int $posId, float $nilai = 0, ?string $keterangan = null): int {
+        $existing = $this->db->get_where('kegiatan_anggaran', array(
+            'kegiatan_id' => $kegiatanId,
+            'pos_anggaran_id' => $posId,
+        ))->row_array();
+        if ($existing) {
+            if ($nilai > (float)$existing['nilai_alokasi']) {
+                $this->db->where('id', (int)$existing['id'])->update('kegiatan_anggaran', array(
+                    'nilai_alokasi' => $nilai,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ));
+            }
+            return (int)$existing['id'];
+        }
+        $this->db->insert('kegiatan_anggaran', array(
+            'kegiatan_id' => $kegiatanId,
+            'pos_anggaran_id' => $posId,
+            'nilai_alokasi' => max(0, $nilai),
+            'keterangan' => $keterangan,
+            'created_at' => date('Y-m-d H:i:s'),
+        ));
+        return (int)$this->db->insert_id();
+    }
+
+    /** Alokasi pagu kegiatan: satu kegiatan dapat memakai beberapa pos. */
+    public function get_alokasi_anggaran(int $kegiatanId): array {
+        return $this->db->select('ka.*, pa.kode AS pos_kode, pa.nama AS pos_nama, pa.pagu AS pos_pagu,
+                                  pa.tipe AS pos_tipe, ja.nama AS jenis_anggaran_nama,
+                                  COALESCE((SELECT SUM(kb.volume * kb.tarif)
+                                            FROM kegiatan_biaya kb
+                                            JOIN kegiatan kx ON kx.id = ka.kegiatan_id AND kx.status = "AKTIF"
+                                            WHERE kb.kegiatan_anggaran_id = ka.id), 0) AS realisasi', FALSE)
+            ->from('kegiatan_anggaran ka')
+            ->join('pos_anggaran pa', 'pa.id = ka.pos_anggaran_id')
+            ->join('jenis_anggaran ja', 'ja.id = pa.jenis_anggaran_id', 'left')
+            ->where('ka.kegiatan_id', $kegiatanId)
+            ->order_by('pa.urutan', 'ASC')
+            ->order_by('pa.nama', 'ASC')
+            ->get()->result_array();
+    }
+
+    public function save_alokasi_anggaran(int $kegiatanId, int $posId, float $nilai, ?string $keterangan = null, ?int $id = null): int {
+        $data = array(
+            'kegiatan_id' => $kegiatanId,
+            'pos_anggaran_id' => $posId,
+            'nilai_alokasi' => max(0, $nilai),
+            'keterangan' => $keterangan,
+            'updated_at' => date('Y-m-d H:i:s'),
+        );
+        if ($id) {
+            $this->db->where('id', $id)->where('kegiatan_id', $kegiatanId)->update('kegiatan_anggaran', $data);
+            return $id;
+        }
+        $existing = $this->db->get_where('kegiatan_anggaran', array('kegiatan_id' => $kegiatanId, 'pos_anggaran_id' => $posId))->row_array();
+        if ($existing) {
+            $this->db->where('id', (int)$existing['id'])->update('kegiatan_anggaran', $data);
+            return (int)$existing['id'];
+        }
+        $data['created_at'] = date('Y-m-d H:i:s');
+        $this->db->insert('kegiatan_anggaran', $data);
+        return (int)$this->db->insert_id();
+    }
+
+    public function delete_alokasi_anggaran(int $id): bool {
+        $hasCost = $this->db->where('kegiatan_anggaran_id', $id)->count_all_results('kegiatan_biaya');
+        $hasParticipant = $this->db->where('kegiatan_anggaran_id', $id)->count_all_results('kegiatan_peserta');
+        if ($hasCost || $hasParticipant) return false;
+        return (bool)$this->db->where('id', $id)->delete('kegiatan_anggaran');
+    }
+
+    public function save_biaya_umum(int $kegiatanId, int $alokasiId, int $jenisBiayaId, float $volume, float $tarif): int {
+        $allocation = $this->db->get_where('kegiatan_anggaran', array('id' => $alokasiId, 'kegiatan_id' => $kegiatanId))->row_array();
+        if (!$allocation) return 0;
+        $this->db->insert('kegiatan_biaya', array(
+            'kegiatan_peserta_id' => null,
+            'kegiatan_anggaran_id' => $alokasiId,
+            'jenis_biaya_id' => $jenisBiayaId,
+            'volume' => max(0, $volume),
+            'tarif' => max(0, $tarif),
+        ));
+        $this->recalculate_total($kegiatanId);
+        return (int)$this->db->insert_id();
+    }
+
+    private function sync_alokasi_peserta(int $alokasiId): void {
+        $row = $this->db->get_where('kegiatan_anggaran', array('id' => $alokasiId))->row_array();
+        if (!$row) return;
+        $dana = $this->db->select_sum('dana_awal')->where('kegiatan_anggaran_id', $alokasiId)->get('kegiatan_peserta')->row_array();
+        $biaya = $this->db->query('SELECT COALESCE(SUM(volume * tarif), 0) AS total FROM kegiatan_biaya WHERE kegiatan_anggaran_id = ?', array($alokasiId))->row_array();
+        $minimum = max((float)($dana['dana_awal'] ?? 0), (float)($biaya['total'] ?? 0));
+        if ((float)$row['nilai_alokasi'] < $minimum) {
+            $this->db->where('id', $alokasiId)->update('kegiatan_anggaran', array('nilai_alokasi' => $minimum, 'updated_at' => date('Y-m-d H:i:s')));
+        }
     }
 
     private function apply_rekap_filter(array $filter, string $search = ''): void {
