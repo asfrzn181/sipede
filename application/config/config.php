@@ -1,5 +1,24 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
-$config['base_url'] = getenv('APP_BASE_URL') ?: 'http://localhost/sipede/';
+// Base URL dibentuk otomatis dari request yang sedang berjalan.
+// Dengan demikian aplikasi tetap bekerja saat dipindahkan dari localhost,
+// subfolder, domain utama, subdomain, atau HTTPS tanpa mengubah .env.
+$forwardedProto = trim((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+$scheme = $forwardedProto !== ''
+    ? strtolower(trim(explode(',', $forwardedProto)[0]))
+    : ((!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') ? 'https' : 'http');
+$scheme = in_array($scheme, array('http', 'https'), true) ? $scheme : 'http';
+
+$forwardedHost = trim((string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+$host = $forwardedHost !== ''
+    ? trim(explode(',', $forwardedHost)[0])
+    : trim((string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost'));
+$host = preg_replace('/[^a-zA-Z0-9.:\-\[\]]/', '', $host);
+
+$scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+$scriptDir = str_replace('\\', '/', dirname($scriptName));
+$basePath = ($scriptDir === '.' || $scriptDir === '/' || $scriptDir === '') ? '/' : rtrim($scriptDir, '/') . '/';
+
+$config['base_url'] = $scheme . '://' . $host . $basePath;
 $config['index_page'] = getenv('APP_INDEX_PAGE') !== false ? (string)getenv('APP_INDEX_PAGE') : 'index.php';
 $config['enable_query_strings'] = FALSE;
 $config['controller_trigger'] = 'c';
