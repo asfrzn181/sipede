@@ -9,10 +9,11 @@
 
 ## Database baru
 
-1. Buat database dan user MySQL di cPanel.
-2. Import `database/schema_full.sql`.
-3. Import `database/seed_full.sql`.
-4. Jangan menaruh folder `database/` di document root publik.
+1. Buat database dan user MySQL di cPanel. Gunakan nama lengkap dengan prefix akun.
+2. Buka phpMyAdmin dan klik database tersebut di panel kiri.
+3. Import `database/schema_full.sql`.
+4. Import `database/seed_full.sql` pada database yang sama.
+5. Jangan menaruh folder `database/` di document root publik.
 
 ## Konfigurasi aplikasi
 
@@ -25,7 +26,7 @@ APP_BASE_URL=https://domain-anda.tld/
 APP_INDEX_PAGE=
 APP_COOKIE_SECURE=1
 DB_HOST=localhost
-DB_NAME=nama_database
+DB_NAME=usfd6ds0_sipede
 DB_USER=nama_user
 DB_PASS=password_database
 ENCRYPTION_KEY=kunci-acak-minimal-32-karakter

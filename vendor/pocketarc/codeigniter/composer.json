@@ -1,0 +1,32 @@
+{
+	"description": "Actively maintained CodeIgniter 3 fork with support for PHP 5.4 - PHP 8.6 (and beyond). Fully backward compatible.",
+	"name": "pocketarc/codeigniter",
+	"type": "project",
+	"homepage": "https://github.com/pocketarc/codeigniter",
+	"license": "MIT",
+	"support": {
+		"source": "https://github.com/pocketarc/codeigniter"
+	},
+	"require": {
+		"php": ">=5.4.8"
+	},
+	"suggest": {
+		"paragonie/random_compat": "Provides better randomness in PHP 5.x"
+	},
+	"scripts": {
+		"test:coverage": [
+			"@putenv XDEBUG_MODE=coverage",
+			"phpunit --color=always --coverage-text --configuration tests/travis/sqlite.phpunit.xml"
+		],
+		"post-install-cmd": [
+			"@php tests/patch-vendor.php"
+		],
+		"post-update-cmd": [
+			"@php tests/patch-vendor.php"
+		]
+	},
+	"require-dev": {
+		"mikey179/vfsstream": "1.6.*",
+		"phpunit/phpunit": "4.* || 5.* || 8.* || 9.*"
+	}
+}

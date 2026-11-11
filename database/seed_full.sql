@@ -3,7 +3,7 @@
 -- DATA SEED AWAL BERSIH (CLEAN SEED - HANYA AKUN ADMINISTRATOR)
 -- =============================================================================
 
-USE `anggaran_dprd`;
+-- USE `anggaran_dprd`;
 
 SET @password_default = '$2y$10$nZPUGsK/.d9Z1bafYrSlFOgeMlEGx9Yvk/bMD0YT7.3QAw/g96KYK';
 

@@ -4,7 +4,7 @@
 .env.*.local
 
 # Composer dependencies
-/vendor/
+#/vendor/
 
 # Temporary & Cache files
 /application/cache/*

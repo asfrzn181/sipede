@@ -3,11 +3,11 @@
 -- SKEMA DATABASE LENGKAP & BERSIH (FULL SCHEMA DEFINITION)
 -- =============================================================================
 
-CREATE DATABASE IF NOT EXISTS `anggaran_dprd` 
-  CHARACTER SET utf8mb4 
-  COLLATE utf8mb4_unicode_ci;
+-- CREATE DATABASE IF NOT EXISTS `anggaran_dprd` 
+-- CHARACTER SET utf8mb4
+-- COLLATE utf8mb4_unicode_ci;
 
-USE `anggaran_dprd`;
+-- USE `anggaran_dprd`;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
