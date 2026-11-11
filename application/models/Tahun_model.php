@@ -47,7 +47,47 @@ class Tahun_model extends CI_Model {
     /** Pagu anggaran per penerima untuk satu tahun, dilengkapi data realisasi dan sisa */
     public function pagu_by_tahun(int $tahun_id): array {
         return $this->db
-            ->select('a.id anggaran_id, COALESCE(a.pagu, 0) pagu, p.id penerima_id, p.nama, p.tipe, p.jabatan, p.periode_mulai, p.periode_akhir, COALESCE(r.realisasi, 0) realisasi, (COALESCE(a.pagu, 0) - COALESCE(r.realisasi, 0)) sisa', FALSE)
+            ->select("a.id anggaran_id,
+                COALESCE(
+                    (SELECT pa.pagu
+                     FROM pos_anggaran pa
+                     WHERE pa.tahun_anggaran_id = {$tahun_id}
+                       AND pa.tipe = 'DPRD'
+                       AND pa.penerima_id = p.id
+                       AND pa.is_active = 1
+                     LIMIT 1),
+                    (SELECT pa2.pagu
+                     FROM pos_anggaran pa2
+                     JOIN penugasan_pos pp2 ON pp2.pos_anggaran_id = pa2.id
+                     WHERE pa2.tahun_anggaran_id = {$tahun_id}
+                       AND pa2.tipe = 'PENDAMPING'
+                       AND pa2.is_active = 1
+                       AND pp2.penerima_id = p.id
+                       AND pp2.tanggal_selesai IS NULL
+                     LIMIT 1),
+                    a.pagu, 0
+                ) AS pagu,
+                p.id penerima_id, p.nama, p.tipe, p.jabatan, p.periode_mulai, p.periode_akhir,
+                COALESCE(r.realisasi, 0) realisasi,
+                (COALESCE(
+                    (SELECT pa.pagu
+                     FROM pos_anggaran pa
+                     WHERE pa.tahun_anggaran_id = {$tahun_id}
+                       AND pa.tipe = 'DPRD'
+                       AND pa.penerima_id = p.id
+                       AND pa.is_active = 1
+                     LIMIT 1),
+                    (SELECT pa2.pagu
+                     FROM pos_anggaran pa2
+                     JOIN penugasan_pos pp2 ON pp2.pos_anggaran_id = pa2.id
+                     WHERE pa2.tahun_anggaran_id = {$tahun_id}
+                       AND pa2.tipe = 'PENDAMPING'
+                       AND pa2.is_active = 1
+                       AND pp2.penerima_id = p.id
+                       AND pp2.tanggal_selesai IS NULL
+                     LIMIT 1),
+                    a.pagu, 0
+                ) - COALESCE(r.realisasi, 0)) AS sisa", FALSE)
             ->from('penerima p')
             ->join('anggaran a', 'a.penerima_id = p.id AND a.tahun_anggaran_id = ' . (int)$tahun_id, 'left')
             ->join('v_realisasi r', 'r.tahun_anggaran_id = ' . (int)$tahun_id . ' AND r.penerima_id = p.id', 'left')

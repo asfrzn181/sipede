@@ -134,18 +134,11 @@
             </td>
             <?php if($can_manage_anggaran && !$tahun['is_locked']): ?>
             <td class="text-end text-nowrap">
-              <button class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 js-revisi-btn"
-                data-tahun-id="<?= $encTahunId ?>"
-                data-penerima-id="<?= $encPenerimaId ?>"
-                data-penerima-nama="<?= html_escape($row['nama']) ?>"
-                data-penerima-tipe="<?= html_escape($row['tipe']) ?>"
-                data-penerima-jabatan="<?= html_escape($row['jabatan'] ?? '-') ?>"
-                data-pagu="<?= $pagu ?>"
-                data-realisasi="<?= $realisasi ?>"
-                data-sisa="<?= $sisa ?>">
-                <i class="bi bi-pencil-square"></i>
-                <span>Revisi</span>
-              </button>
+              <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                 href="<?= site_url('pos/index/' . $encTahunLink) ?>">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <span>Kelola Pos</span>
+              </a>
             </td>
             <?php endif; ?>
           </tr>

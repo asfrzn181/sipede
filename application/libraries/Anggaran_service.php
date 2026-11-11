@@ -26,8 +26,16 @@ class Anggaran_service
         foreach ($peserta as $person) {
             $penerimaId = (int) ($person['penerima_id'] ?? 0);
             if (!empty($person['sumber_dana_id']) && !$this->ci->db->where(array('id'=>(int)$person['sumber_dana_id'],'is_active'=>1))->count_all_results('sumber_dana')) return $this->fail('Sumber dana peserta tidak ditemukan atau tidak aktif.');
-            $budget = $this->ci->db->query('SELECT * FROM v_sisa_anggaran WHERE tahun_anggaran_id = ? AND penerima_id = ?', array($year, $penerimaId))->row_array();
-            if (!$budget) return $this->fail('Anggaran peserta belum tersedia untuk tahun kegiatan.');
+            // Pos Anggaran adalah sumber pagu utama. Tabel anggaran hanya
+            // menjadi fallback untuk data lama yang belum memiliki pos.
+            $budget = $this->find_pos_budget($year, $penerimaId);
+            if (!$budget) {
+                $budget = $this->ci->db->query(
+                    'SELECT * FROM v_sisa_anggaran WHERE tahun_anggaran_id = ? AND penerima_id = ?',
+                    array($year, $penerimaId)
+                )->row_array();
+            }
+            if (!$budget) return $this->fail('Pos Anggaran peserta belum tersedia untuk tahun kegiatan.');
             $total = 0;
             foreach (($person['biaya'] ?? array()) as $cost) {
                 $total += (float) ($cost['volume'] ?? 0) * (float) ($cost['tarif'] ?? 0);
@@ -70,5 +78,32 @@ class Anggaran_service
     {
         $this->ci->db->trans_rollback();
         return array('error' => $message);
+    }
+
+    /** Ambil pos default aktif milik penerima untuk tahun berjalan. */
+    private function find_pos_budget(int $year, int $penerimaId): ?array
+    {
+        $row = $this->ci->db->query(
+            "SELECT vsp.*
+             FROM v_sisa_pos vsp
+             WHERE vsp.tahun_anggaran_id = ?
+               AND (
+                 (vsp.tipe = 'DPRD' AND vsp.penerima_id = ?)
+                 OR (
+                   vsp.tipe = 'PENDAMPING'
+                   AND EXISTS (
+                     SELECT 1 FROM penugasan_pos pp
+                     WHERE pp.pos_anggaran_id = vsp.pos_anggaran_id
+                       AND pp.penerima_id = ?
+                       AND pp.tanggal_selesai IS NULL
+                   )
+                 )
+               )
+             ORDER BY CASE WHEN vsp.tipe = 'DPRD' THEN 0 ELSE 1 END
+             LIMIT 1",
+            array($year, $penerimaId, $penerimaId)
+        )->row_array();
+
+        return $row ?: null;
     }
 }

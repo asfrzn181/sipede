@@ -83,7 +83,7 @@
         <a class="nav-link <?= ($cClass === 'rekapitulasi') ? 'active' : '' ?>" href="<?= site_url('rekapitulasi') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-receipt-cutoff"></i>
-          <span class="menu-title">Rekapitulasi Perjalanan Dinas</span>
+          <span class="menu-title">Rekapitulasi</span>
         </a>
         <?php endif; ?>
 
@@ -112,7 +112,7 @@
         <a class="nav-link <?= ($cClass === 'tahun') ? 'active' : '' ?>" href="<?= site_url('tahun') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-calendar3"></i>
-          <span class="menu-title">Tahun &amp; Pagu Anggaran</span>
+          <span class="menu-title">Tahun Anggaran</span>
         </a>
         <a class="nav-link <?= ($cClass === 'pos') ? 'active' : '' ?>" href="<?= site_url('pos/index/' . encrypt_id($this->session->userdata('tahun_aktif_id'))) ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
