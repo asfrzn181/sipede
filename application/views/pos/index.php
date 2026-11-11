@@ -23,7 +23,7 @@
             data-tahun-id="<?= $encTahunId ?>">
       <i class="bi bi-magic"></i> Buat Pos Otomatis
     </button>
-    <!-- Pagu Standar DPRD -->
+    <!-- Pagu Standar DPRD & Pendamping -->
     <button class="btn btn-sm btn-outline-warning d-flex align-items-center gap-1"
             data-bs-toggle="modal" data-bs-target="#modalPaguStandar">
       <i class="bi bi-sliders"></i> Terapkan Pagu Standar
@@ -403,7 +403,7 @@
   </div>
 </div>
 
-<!-- ── Modal Pagu Standar DPRD ── -->
+<!-- ── Modal Pagu Standar DPRD & Pendamping ── -->
 <div class="modal fade" id="modalPaguStandar" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -411,12 +411,12 @@
         <input type="hidden" name="tahun_id" value="<?= $encTahunId ?>">
         <div class="modal-header bg-light">
           <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-sliders text-warning"></i> Terapkan Pagu Standar DPRD
+            <i class="bi bi-sliders text-warning"></i> Terapkan Pagu Standar
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4">
-          <p class="text-muted small">Isi pagu standar per kelompok jabatan. Sistem otomatis menerapkan ke semua pos DPRD sesuai kelompoknya. Hanya pos yang pagu-nya masih 0 yang diperbarui (kecuali centang "Timpa Semua").</p>
+          <p class="text-muted small">Isi pagu standar per kelompok jabatan DPRD dan satu pagu untuk seluruh pos pendamping. Hanya pos yang pagu-nya masih 0 yang diperbarui (kecuali centang "Timpa Semua").</p>
           <div class="mb-3">
             <label class="form-label small fw-bold">Pagu Ketua DPRD <span class="text-danger">*</span></label>
             <div class="input-group">
@@ -440,6 +440,15 @@
               <input type="text" class="form-control input-rupiah" name="pagu_anggota" data-target-hidden="#hidPaguAnggota" placeholder="0">
               <input type="hidden" id="hidPaguAnggota" name="pagu_anggota">
             </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Pagu Pendamping</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">Rp</span>
+              <input type="text" class="form-control input-rupiah" name="pagu_pendamping" data-target-hidden="#hidPaguPendamping" placeholder="0">
+              <input type="hidden" id="hidPaguPendamping" name="pagu_pendamping">
+            </div>
+            <div class="form-text">Nilai ini diterapkan ke seluruh pos jabatan pendamping.</div>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="overwrite" value="1" id="chkOverwrite">

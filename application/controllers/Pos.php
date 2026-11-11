@@ -88,7 +88,7 @@ class Pos extends MY_Controller
         $this->respond(true, "Berhasil membuat {$cDprd} pos DPRD dan {$cPend} pos pendamping baru.");
     }
 
-    // ─── Terapkan Pagu Standar DPRD ─────────────────────────────────
+    // ─── Terapkan Pagu Standar DPRD & Pendamping ───────────────────
 
     public function terapkan_standar(): void {
         $this->require_permission('anggaran.manage');
@@ -100,6 +100,7 @@ class Pos extends MY_Controller
             'WAKIL_KETUA'=> clean_number($this->input->post('pagu_wakil_ketua')),
             'ANGGOTA'    => clean_number($this->input->post('pagu_anggota')),
         ];
+        $paguPendamping = clean_number($this->input->post('pagu_pendamping'));
 
         if (!$tahunId) $this->respond(false, 'Tahun tidak valid.', [], [], 422);
 
@@ -109,12 +110,18 @@ class Pos extends MY_Controller
         }
 
         $n = $this->Pos_model->terapkan_pagu_standar($tahunId, $standar, $overwrite);
+        $nPendamping = $this->Pos_model->terapkan_pagu_pendamping($tahunId, $paguPendamping, $overwrite);
 
         $this->Audit_model->write('POS_ANGGARAN', $tahunId, 'TERAPKAN_STANDAR',
-            [], array_merge($standar, ['overwrite' => $overwrite, 'diperbarui' => $n]),
+            [], array_merge($standar, [
+                'pagu_pendamping' => $paguPendamping,
+                'overwrite' => $overwrite,
+                'diperbarui_dprd' => $n,
+                'diperbarui_pendamping' => $nPendamping,
+            ]),
             (int)$this->user['id']);
 
-        $this->respond(true, "{$n} pos DPRD berhasil diperbarui pagu standarnya.");
+        $this->respond(true, "{$n} pos DPRD dan {$nPendamping} pos pendamping berhasil diperbarui pagu standarnya.");
     }
 
     // ─── Revisi Pagu Pos ─────────────────────────────────────────────

@@ -289,6 +289,37 @@ class Pos_model extends CI_Model {
         return $updated;
     }
 
+    /**
+     * Terapkan satu pagu standar ke seluruh pos PENDAMPING pada satu tahun.
+     * Hanya memperbarui pagu yang masih 0 kecuali overwrite diaktifkan.
+     */
+    public function terapkan_pagu_pendamping(int $tahunId, float $pagu, bool $overwrite = false): int {
+        if ($pagu <= 0) return 0;
+
+        $this->db
+            ->where('tahun_anggaran_id', $tahunId)
+            ->where('tipe', 'PENDAMPING')
+            ->where('is_active', 1);
+
+        if (!$overwrite) {
+            $this->db->where('pagu', 0);
+        }
+
+        $rows = $this->db->get('pos_anggaran')->result_array();
+        $updated = 0;
+
+        foreach ($rows as $row) {
+            $this->db->where('id', (int)$row['id'])
+                     ->update('pos_anggaran', [
+                         'pagu' => $pagu,
+                         'updated_at' => date('Y-m-d H:i:s'),
+                     ]);
+            $updated++;
+        }
+
+        return $updated;
+    }
+
     // ─── Penugasan Pos (hanya PENDAMPING) ───────────────────────────
 
     /**
