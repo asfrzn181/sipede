@@ -524,6 +524,17 @@ $(function(){
   var defaultPosId = '';
   var currentTipePeserta = '';
 
+  function hideAlasanPengalihan(clearValue) {
+    $('#boxAlasanPengalihan').hide();
+    $('#inpAlasanPengalihan').prop('required', false);
+    if (clearValue !== false) $('#inpAlasanPengalihan').val('');
+  }
+
+  function showAlasanPengalihan() {
+    $('#boxAlasanPengalihan').stop(true, true).slideDown(200);
+    $('#inpAlasanPengalihan').prop('required', true);
+  }
+
   function handlePenerimaChange() {
     var opt = $('#penerimaSelect').find(':selected');
     var tipe = opt.data('tipe');
@@ -533,13 +544,13 @@ $(function(){
     if (!penerimaId) {
       $('#boxPosDprd').hide();
       $('#boxPosPendamping').hide();
-      $('#boxAlasanPengalihan').hide();
+      hideAlasanPengalihan();
       return;
     }
 
     if (tipe === 'DPRD') {
       $('#boxPosPendamping').hide();
-      $('#boxAlasanPengalihan').hide();
+      hideAlasanPengalihan();
       $('#boxPosDprd').show();
       $('#txtNamaPosDprd').text(opt.text().split('—')[0].trim());
       $('#txtSaldoPosDprd').text('Memuat saldo pos...');
@@ -578,16 +589,15 @@ $(function(){
 
   function checkPengalihanPos() {
     if (currentTipePeserta !== 'PENDAMPING') {
-      $('#boxAlasanPengalihan').hide();
+      hideAlasanPengalihan();
       return;
     }
     var selectedPos = $('#posPendampingSelect').val();
     if (defaultPosId && selectedPos && selectedPos !== defaultPosId) {
-      $('#boxAlasanPengalihan').slideDown(200);
-      $('#inpAlasanPengalihan').prop('required', true);
+      showAlasanPengalihan();
     } else {
-      $('#boxAlasanPengalihan').slideUp(200);
-      $('#inpAlasanPengalihan').prop('required', false);
+      $('#boxAlasanPengalihan').stop(true, true).slideUp(200);
+      $('#inpAlasanPengalihan').prop('required', false).val('');
     }
   }
 
@@ -618,7 +628,7 @@ $(function(){
     currentTipePeserta = '';
     $('#boxPosDprd').hide();
     $('#boxPosPendamping').hide();
-    $('#boxAlasanPengalihan').hide();
+    hideAlasanPengalihan();
     if ($.fn.select2 && $('#penerimaSelect').hasClass("select2-hidden-accessible")) {
       $('#penerimaSelect').val('').trigger('change');
     }
@@ -636,6 +646,7 @@ $(function(){
   $(document).on('click', '.js-edit-peserta', function(){
     var p = $(this).data('peserta');
     $('#formPeserta')[0].reset();
+    hideAlasanPengalihan();
     $('#pesertaIdInput').val(p.id);
     currentTipePeserta = p.tipe || '';
     $('#penerimaSelect').val(p.penerima_id);
@@ -654,11 +665,11 @@ $(function(){
       }
       if (p.alasan_pengalihan) {
         $('#inpAlasanPengalihan').val(p.alasan_pengalihan);
-        $('#boxAlasanPengalihan').show();
+        showAlasanPengalihan();
       }
     } else {
       $('#boxPosPendamping').hide();
-      $('#boxAlasanPengalihan').hide();
+      hideAlasanPengalihan();
       $('#boxPosDprd').show();
       $('#txtNamaPosDprd').text(p.nama);
     }

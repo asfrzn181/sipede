@@ -459,8 +459,19 @@
 $(function(){
   var currentPagu = 0, currentRealisasi = 0;
 
+  // Selalu baca nilai dari input yang terlihat agar angka tampilan dan angka
+  // yang dihitung tidak berbeda ketika hidden input belum tersinkron.
+  function readPaguBaru() {
+    var displayValue = $('#revPaguBaruDisplay').val();
+    var paguBaru = window.cleanRupiah
+      ? window.cleanRupiah(displayValue)
+      : (parseFloat($('#revPaguBaruVal').val()) || 0);
+    $('#revPaguBaruVal').val(paguBaru);
+    return paguBaru;
+  }
+
   function hitungRevisi() {
-    var paguBaru = parseFloat($('#revPaguBaruVal').val()) || 0;
+    var paguBaru = readPaguBaru();
     var selisih  = paguBaru - currentPagu;
     var sisaBaru = paguBaru - currentRealisasi;
 
@@ -504,7 +515,7 @@ $(function(){
   // Submit Revisi Pagu
   $('#formRevisiPagu').on('submit', function(e){
     e.preventDefault();
-    var paguBaru = parseFloat($('#revPaguBaruVal').val()) || 0;
+    var paguBaru = readPaguBaru();
     if (paguBaru < currentRealisasi) { App.toast('Pagu baru di bawah realisasi terpakai!', 'error'); return; }
     if (Math.abs(paguBaru - currentPagu) < 0.01) { App.toast('Nilai pagu sama dengan saat ini.', 'warning'); return; }
     App.ajax({ url: window.APP.baseUrl + 'pos/revisi_pagu', data: $(this).serialize() })

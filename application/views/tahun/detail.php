@@ -288,12 +288,19 @@ $(function(){
   var currentPagu = 0;
   var currentRealisasi = 0;
 
+  // Gunakan angka yang terlihat sebagai sumber utama agar hidden input tidak
+  // menyebabkan selisih/estimasi berbeda dari nilai yang diketik pengguna.
+  function readPaguBaru() {
+    var displayValue = $('#revPaguBaruDisplay').val();
+    var paguBaru = window.cleanRupiah
+      ? window.cleanRupiah(displayValue)
+      : (parseFloat($('#revPaguBaru').val()) || 0);
+    $('#revPaguBaru').val(paguBaru);
+    return paguBaru;
+  }
+
   function hitungKalkulasi() {
-    var raw = $('#revPaguBaru').val();
-    if (!raw && $('#revPaguBaruDisplay').length) {
-      raw = window.cleanRupiah ? window.cleanRupiah($('#revPaguBaruDisplay').val()) : 0;
-    }
-    var paguBaru = parseFloat(raw) || 0;
+    var paguBaru = readPaguBaru();
     var selisih = paguBaru - currentPagu;
     var sisaBaru = paguBaru - currentRealisasi;
 
@@ -376,7 +383,7 @@ $(function(){
   $('#revisiForm').on('submit', function(e){
     e.preventDefault();
     var form = $(this);
-    var paguBaru = parseFloat($('#revPaguBaru').val()) || 0;
+    var paguBaru = readPaguBaru();
     var alasan = $('#revAlasan').val().trim();
 
     if (paguBaru < currentRealisasi) {
