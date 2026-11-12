@@ -180,6 +180,13 @@
         </a>
         <?php endif; ?>
 
+        <div class="nav-section">BANTUAN</div>
+        <a class="nav-link <?= ($cClass === 'manual_book') ? 'active' : '' ?>" href="<?= site_url('manual_book') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-book"></i>
+          <span class="menu-title">Manual Book</span>
+        </a>
+
         <div class="nav-section">AKUN SAYA</div>
         <a class="nav-link <?= ($cClass === 'profil') ? 'active' : '' ?>" href="<?= site_url('profil') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
