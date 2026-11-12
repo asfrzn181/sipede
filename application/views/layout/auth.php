@@ -24,8 +24,9 @@
         <?= html_escape($this->session->flashdata('login_error')) ?>
       </div>
     <?php endif; ?>
+    <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
 
-    <form action="<?= site_url('auth/login') ?>" method="post">
+    <form id="loginForm" action="<?= site_url('auth/login') ?>" method="post">
       <input type="hidden" name="<?= $this->security->get_csrf_token_name() ?>" value="<?= $this->security->get_csrf_hash() ?>">
       <div class="mb-3">
         <label class="form-label" for="username">Username</label>
@@ -38,5 +39,41 @@
       <button class="btn btn-primary btn-lg w-100" type="submit">Masuk</button>
     </form>
   </main>
+  <script>
+  (function () {
+    var form = document.getElementById('loginForm');
+    var errorBox = document.getElementById('loginError');
+    if (!form) return;
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var button = form.querySelector('button[type="submit"]');
+      if (button) button.disabled = true;
+      fetch(form.action, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: new URLSearchParams(new FormData(form))
+      }).then(function (response) {
+        return response.json().then(function (data) {
+          return { ok: response.ok, data: data };
+        });
+      }).then(function (result) {
+        var data = result.data || {};
+        if (data.status && data.data && data.data.redirect) {
+          window.location.href = data.data.redirect;
+          return;
+        }
+        throw new Error(data.message || 'Username atau password salah.');
+      }).catch(function (error) {
+        errorBox.textContent = error.message || 'Login gagal.';
+        errorBox.classList.remove('d-none');
+        if (button) button.disabled = false;
+      });
+    });
+  }());
+  </script>
 </body>
 </html>
