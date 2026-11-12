@@ -9,6 +9,11 @@
     RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 </IfModule>
 
+# Aplikasi internal: jangan indeks oleh mesin pencari.
+<IfModule mod_headers.c>
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+</IfModule>
+
 <IfModule !mod_rewrite.c>
     ErrorDocument 404 /index.php
 </IfModule>
