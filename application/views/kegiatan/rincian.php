@@ -534,8 +534,8 @@
               <label class="form-label small fw-bold">Anggaran yang Dipakai <span class="text-danger">*</span></label>
               <select class="form-select" name="pos_anggaran_id" id="posAnggaranSelect">
                 <option value="">-- Pilih Pos Anggaran --</option>
-                <?php foreach(array('DPRD', 'PENDAMPING') as $tipePos): ?>
-                  <optgroup label="<?= $tipePos === 'DPRD' ? 'Anggaran DPRD' : 'Anggaran Pendamping / Jabatan' ?>">
+                <?php foreach(array('DPRD', 'PENDAMPING', 'KEGIATAN') as $tipePos): ?>
+                  <optgroup label="<?= $tipePos === 'DPRD' ? 'Anggaran DPRD' : ($tipePos === 'PENDAMPING' ? 'Anggaran Pendamping / Jabatan' : 'Anggaran Kegiatan / Rapat') ?>">
                     <?php foreach($pos_anggaran as $pp): if($pp['tipe'] !== $tipePos) continue; ?>
                     <option value="<?= encrypt_id($pp['id']) ?>"
                             data-pemegang-id="<?= $pp['penugasan_penerima_id'] ?>"
@@ -555,10 +555,10 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <label class="form-label small fw-bold">Dana Awal / Panjar (Rp) <span class="text-danger">*</span></label>
+              <label class="form-label small fw-bold">Dana Awal / Panjar (Rp) <span class="text-muted">(opsional)</span></label>
               <input type="text" class="form-control input-rupiah" name="dana_awal" id="inpDanaAwal"
-                     placeholder="Contoh: 100.000.000" inputmode="numeric" required>
-              <div class="form-text small text-muted">Dana yang diberikan atau dialokasikan di muka untuk peserta ini.</div>
+                     placeholder="Kosongkan jika tidak ada panjar" inputmode="numeric">
+              <div class="form-text small text-muted">Kosong berarti Rp0. Isi hanya jika ada dana yang diberikan atau dialokasikan di muka.</div>
             </div>
 
             <!-- Keterangan anggaran selalu wajib, baik pos sendiri maupun pos lain -->
@@ -916,11 +916,6 @@ $(function(){
     var posId = $('#posAnggaranSelect').val() || null;
     var alasan = $.trim($('#inpAlasanPengalihan').val() || '');
     var danaAwal = parseNominal($('#inpDanaAwal').val());
-    if (!danaAwal && $('#inpDanaAwal').val().trim() !== '0') {
-      App.toast('Dana awal wajib diisi.', 'warning');
-      $('#inpDanaAwal').focus();
-      return;
-    }
     if (!alasan) {
       App.toast('Keterangan anggaran wajib diisi.', 'warning');
       $('#inpAlasanPengalihan').focus();

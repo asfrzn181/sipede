@@ -32,6 +32,10 @@
             data-bs-toggle="modal" data-bs-target="#modalTambahPosPendamping">
       <i class="bi bi-plus-circle"></i> Tambah Pos Pendamping
     </button>
+    <button class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+            data-bs-toggle="modal" data-bs-target="#modalTambahPosKegiatan">
+      <i class="bi bi-plus-circle"></i> Tambah Pos Kegiatan
+    </button>
   </div>
   <?php endif; ?>
 </div>
@@ -71,6 +75,9 @@
   </button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPendamping">
     <i class="bi bi-people me-1"></i>Pos Pendamping (<?= count(array_filter($rows, fn($r) => $r['tipe']==='PENDAMPING')) ?>)
+  </button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabKegiatan">
+    <i class="bi bi-calendar-event me-1"></i>Pos Kegiatan (<?= count(array_filter($rows, fn($r) => $r['tipe']==='KEGIATAN')) ?>)
   </button></li>
 </ul>
 
@@ -237,6 +244,41 @@
     </div>
   </div>
 
+  <!-- ── Tab KEGIATAN ── -->
+  <div class="tab-pane fade" id="tabKegiatan">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-bold d-flex align-items-center gap-2">
+        <i class="bi bi-calendar-event text-success"></i>
+        <span>Pos Khusus Kegiatan</span>
+        <span class="badge text-bg-light border small text-muted">Rapat, Fasilitas, dan kegiatan lainnya</span>
+      </div>
+      <div class="card-body p-3">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 datatable" id="tblKegiatan">
+            <thead class="table-light small"><tr>
+              <th>Nama Pos Kegiatan</th><th>Jenis Anggaran</th>
+              <th class="text-end">Pagu</th><th class="text-end">Realisasi</th><th class="text-end">Sisa</th>
+              <?php if($can_manage && !$isLocked): ?><th class="no-sort text-end" style="width:130px">Aksi</th><?php endif; ?>
+            </tr></thead>
+            <tbody>
+              <?php foreach($rows as $r): if($r['tipe']!=='KEGIATAN') continue; ?>
+              <?php $encPosId = encrypt_id($r['id']); $sisa=(float)$r['sisa']; $pagu=(float)$r['pagu']; $realisasi=(float)$r['realisasi']; ?>
+              <tr>
+                <td><div class="fw-semibold"><?= html_escape($r['nama']) ?></div><code class="small text-muted"><?= html_escape($r['kode']) ?></code></td>
+                <td><?= html_escape($r['jenis_anggaran_nama'] ?? 'Belum dikategorikan') ?></td>
+                <td class="text-end fw-bold text-success"><?= rupiah($pagu) ?><div class="small text-muted fw-normal">Awal: <?= rupiah((float)($r['pagu_awal'] ?? 0)) ?></div></td>
+                <td class="text-end text-muted"><?= rupiah($realisasi) ?></td>
+                <td class="text-end fw-semibold <?= $sisa < 0 ? 'text-danger' : 'text-success' ?>"><?= rupiah($sisa) ?></td>
+                <?php if($can_manage && !$isLocked): ?><td class="text-end"><button class="btn btn-sm btn-outline-secondary js-jenis-pos" data-pos-id="<?= $encPosId ?>" data-pos-nama="<?= html_escape($r['nama']) ?>" data-jenis-id="<?= (int)($r['jenis_anggaran_id'] ?? 0) ?>" title="Atur jenis anggaran"><i class="bi bi-tag"></i></button> <button class="btn btn-sm btn-outline-warning js-revisi-pos" data-pos-id="<?= $encPosId ?>" data-pos-nama="<?= html_escape($r['nama']) ?>" data-pos-tipe="KEGIATAN" data-pagu="<?= $pagu ?>" data-pagu-awal="<?= (float)($r['pagu_awal'] ?? 0) ?>" data-realisasi="<?= $realisasi ?>" data-sisa="<?= $sisa ?>"><i class="bi bi-pencil-square"></i></button></td><?php endif; ?>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Modal Jenis Anggaran Pos -->
@@ -373,6 +415,31 @@
           </select>
         </div>
         <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Tambah Pos Kegiatan ── -->
+<div class="modal fade" id="modalTambahPosKegiatan" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formTambahPosKegiatan">
+        <input type="hidden" name="tahun_id" value="<?= $encTahunId ?>">
+        <div class="modal-header bg-light"><h5 class="modal-title fw-bold"><i class="bi bi-calendar-event text-success me-1"></i>Tambah Pos Kegiatan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+          <p class="small text-muted">Gunakan untuk pagu khusus Rapat, Fasilitas, atau kegiatan lain. Pos ini tidak memiliki pemegang dan digunakan melalui Alokasi Pagu Kegiatan.</p>
+          <label class="form-label small fw-semibold">Nama Pos Kegiatan <span class="text-danger">*</span></label>
+          <input class="form-control mb-3" name="nama" required placeholder="Contoh: Rapat Komisi I Tahun 2026">
+          <label class="form-label small fw-semibold">Kode Pos</label>
+          <input class="form-control mb-3" name="kode" placeholder="Contoh: POS-RAPAT-KOM1">
+          <label class="form-label small fw-semibold">Jenis Anggaran <span class="text-danger">*</span></label>
+          <select class="form-select" name="jenis_anggaran_id" required>
+            <option value="">-- Pilih Jenis Anggaran --</option>
+            <?php foreach(($jenis_anggaran ?? array()) as $ja): ?><option value="<?= (int)$ja['id'] ?>"><?= html_escape($ja['nama']) ?></option><?php endforeach; ?>
+          </select>
+        </div>
+        <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-success"><i class="bi bi-save me-1"></i>Simpan</button></div>
       </form>
     </div>
   </div>
@@ -682,6 +749,17 @@ $(function(){
       .done(function(r){
         if(r.status){
           bootstrap.Modal.getOrCreateInstance('#modalTambahPosPendamping').hide();
+          setTimeout(()=>location.reload(), 500);
+        }
+      });
+  });
+
+  $('#formTambahPosKegiatan').on('submit', function(e){
+    e.preventDefault();
+    App.ajax({ url: window.APP.baseUrl + 'pos/tambah_pos_kegiatan', data: $(this).serialize() })
+      .done(function(r){
+        if(r.status){
+          bootstrap.Modal.getOrCreateInstance('#modalTambahPosKegiatan').hide();
           setTimeout(()=>location.reload(), 500);
         }
       });

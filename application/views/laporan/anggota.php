@@ -12,14 +12,17 @@ $totalSisa = $totalPagu - $totalRealisasi;
     <h1 class="h5 fw-bold text-dark mb-1">Laporan per Anggota DPRD</h1>
     <p class="text-muted small mb-0">Membandingkan pagu, realisasi, sisa anggaran, dan jumlah kegiatan untuk setiap anggota DPRD.</p>
   </div>
-  <form method="get" action="<?= site_url('laporan/anggota') ?>" class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2">
+    <?php if(can('laporan.export')): ?><a class="btn btn-outline-success btn-sm" href="<?= site_url('laporan/anggota_excel?tahun_anggaran_id=' . (int)$tahunId) ?>"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a><?php endif; ?>
+    <form method="get" action="<?= site_url('laporan/anggota') ?>" class="d-flex align-items-center gap-2">
     <label class="small text-muted text-nowrap">Tahun</label>
     <select name="tahun_anggaran_id" class="form-select form-select-sm" onchange="this.form.submit()">
       <?php foreach ($tahunList as $tahun): ?>
         <option value="<?= (int)$tahun['id'] ?>" <?= (int)$tahun['id'] === (int)$tahunId ? 'selected' : '' ?>><?= (int)$tahun['tahun'] ?></option>
       <?php endforeach; ?>
     </select>
-  </form>
+    </form>
+    </div>
 </div>
 
 <div class="row g-3 mb-4">
@@ -37,23 +40,23 @@ $totalSisa = $totalPagu - $totalRealisasi;
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
-          <tr><th class="ps-3">Nama Anggota</th><th>Jabatan</th><th class="text-center">Kegiatan</th><th class="text-end">Pagu</th><th class="text-end">Realisasi</th><th class="text-end">Sisa</th><th class="text-end pe-3">Serapan</th></tr>
+          <tr><th class="text-center">No</th><th class="ps-3">Nama</th><th class="text-end">Anggaran</th><th class="text-end">Realisasi</th><th class="text-end">Sisa</th><th>Keterangan</th><th class="text-end pe-3">Aksi</th></tr>
         </thead>
         <tbody>
           <?php if (empty($rows)): ?><tr><td colspan="7" class="text-center text-muted py-4">Belum ada data anggota atau pos anggaran pada tahun ini.</td></tr><?php endif; ?>
-          <?php foreach ($rows as $row): ?>
-            <?php $pct = max(0, min(100, (float)$row['persentase'])); ?>
+          <?php foreach ($rows as $idx => $row): ?>
             <tr>
+              <td class="text-center"><?= $idx + 1 ?></td>
               <td class="ps-3 fw-semibold"><?= html_escape($row['nama']) ?></td>
-              <td><?= html_escape($row['jabatan'] ?: '-') ?></td>
-              <td class="text-center"><?= (int)$row['jumlah_kegiatan'] ?></td>
               <td class="text-end"><?= rupiah($row['pagu']) ?></td>
               <td class="text-end text-success fw-semibold"><?= rupiah($row['realisasi']) ?></td>
               <td class="text-end text-primary"><?= rupiah($row['sisa']) ?></td>
-              <td class="text-end pe-3" style="min-width: 150px"><div class="small fw-semibold mb-1"><?= number_format((float)$row['persentase'], 2, ',', '.') ?>%</div><div class="progress" style="height: 6px"><div class="progress-bar bg-success" style="width: <?= $pct ?>%"></div></div></td>
+              <td><?= html_escape($row['jabatan'] ?: '-') ?></td>
+              <td class="text-end pe-3"><a class="btn btn-sm btn-outline-primary" href="<?= site_url('laporan/perorang?tahun_anggaran_id=' . (int)$tahunId . '&penerima_id=' . (int)$row['id']) ?>"><i class="bi bi-person-lines-fill me-1"></i>Detail</a></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
+        <?php if (!empty($rows)): ?><tfoot class="table-light fw-bold"><tr><td></td><td class="text-end">JUMLAH</td><td class="text-end"><?= rupiah($totalPagu) ?></td><td class="text-end"><?= rupiah($totalRealisasi) ?></td><td class="text-end"><?= rupiah($totalSisa) ?></td><td></td><td></td></tr></tfoot><?php endif; ?>
       </table>
     </div>
   </div>

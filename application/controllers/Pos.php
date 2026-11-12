@@ -32,7 +32,7 @@ class Pos extends MY_Controller
         $rows = $this->Pos_model->all_by_tahun($tahunId);
 
         // Hitung total KPI
-        $totalPaguDprd = $totalPaguPend = $totalRealisasi = $totalSisa = 0.0;
+        $totalPaguDprd = $totalPaguPend = $totalPaguKegiatan = $totalRealisasi = $totalSisa = 0.0;
         $saldoList = $this->Pos_model->saldo_by_tahun($tahunId);
         $saldoMap  = array_column($saldoList, null, 'pos_anggaran_id');
 
@@ -43,6 +43,7 @@ class Pos extends MY_Controller
             $row['sisa']       = (float)($s['sisa'] ?? $row['pagu']);
             if ($row['tipe'] === 'DPRD')       $totalPaguDprd += $row['pagu'];
             if ($row['tipe'] === 'PENDAMPING') $totalPaguPend += $row['pagu'];
+            if ($row['tipe'] === 'KEGIATAN')   $totalPaguKegiatan += $row['pagu'];
             $totalRealisasi += $row['realisasi'];
             $totalSisa      += $row['sisa'];
         }
@@ -60,6 +61,7 @@ class Pos extends MY_Controller
                 'rows'           => $rows,
                 'totalPaguDprd'  => $totalPaguDprd,
                 'totalPaguPend'  => $totalPaguPend,
+                'totalPaguKegiatan' => $totalPaguKegiatan,
                 'totalRealisasi' => $totalRealisasi,
                 'totalSisa'      => $totalSisa,
                 'pendamping'     => $pendamping,
@@ -245,6 +247,34 @@ class Pos extends MY_Controller
         $posId = $this->Pos_model->buat_pos_pendamping_custom($tahunId, $kode, $nama, $jenisId ?: null);
         $this->Audit_model->write('POS_ANGGARAN', $posId, 'BUAT_POS_PENDAMPING', [], ['kode' => $kode, 'nama' => $nama, 'jenis_anggaran_id' => $jenisId], (int)$this->user['id']);
         $this->respond(true, 'Pos jabatan pendamping berhasil ditambahkan. Pagu awal masih Rp 0 dan dapat diisi melalui Terapkan Pagu Standar atau Edit.', ['id' => encrypt_id($posId)]);
+    }
+
+    /**
+     * Buat pos khusus kegiatan seperti Rapat, Fasilitas, atau kegiatan lainnya.
+     * Pos ini tidak memiliki pemegang dan dipakai melalui Alokasi Pagu Kegiatan.
+     */
+    public function tambah_pos_kegiatan(): void {
+        $this->require_permission('anggaran.manage');
+        $tahunId = decrypt_id($this->input->post('tahun_id'));
+        $kode = strtoupper(trim((string)$this->input->post('kode', true)));
+        $kode = preg_replace('/[^A-Z0-9_-]+/', '_', $kode);
+        $nama = trim((string)$this->input->post('nama', true));
+        $jenisId = (int)$this->input->post('jenis_anggaran_id');
+
+        if (!$tahunId || !$nama) $this->respond(false, 'Tahun dan nama pos kegiatan wajib diisi.', [], [], 422);
+        if ($kode === '') $kode = 'POS-KEG-' . strtoupper(substr(sha1($nama . microtime(true)), 0, 8));
+        $tahun = $this->Tahun_model->find($tahunId);
+        if (!$tahun || !empty($tahun['is_locked'])) $this->respond(false, 'Tahun tidak ditemukan atau sudah dikunci.', [], [], 422);
+        if ($this->db->where(['tahun_anggaran_id' => $tahunId, 'kode' => $kode])->count_all_results('pos_anggaran')) {
+            $this->respond(false, 'Kode pos sudah digunakan pada tahun ini.', [], [], 422);
+        }
+        if ($jenisId && !$this->db->get_where('jenis_anggaran', ['id' => $jenisId, 'is_active' => 1])->row_array()) {
+            $this->respond(false, 'Jenis anggaran tidak ditemukan.', [], [], 422);
+        }
+
+        $posId = $this->Pos_model->buat_pos_kegiatan_custom($tahunId, $kode, $nama, $jenisId ?: null);
+        $this->Audit_model->write('POS_ANGGARAN', $posId, 'BUAT_POS_KEGIATAN', [], ['kode' => $kode, 'nama' => $nama, 'jenis_anggaran_id' => $jenisId], (int)$this->user['id']);
+        $this->respond(true, 'Pos kegiatan berhasil ditambahkan. Pagu awal masih Rp 0 dan dapat diisi melalui Edit.', ['id' => encrypt_id($posId)]);
     }
 
     public function set_jenis_anggaran(): void {

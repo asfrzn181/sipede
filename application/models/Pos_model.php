@@ -29,7 +29,7 @@ class Pos_model extends CI_Model {
                     tahun_anggaran_id INT UNSIGNED NOT NULL,
                     kode              VARCHAR(50)  NOT NULL,
                     nama              VARCHAR(200) NOT NULL,
-                    tipe              ENUM('DPRD','PENDAMPING') NOT NULL,
+                    tipe              ENUM('DPRD','PENDAMPING','KEGIATAN') NOT NULL,
                     penerima_id       INT UNSIGNED NULL,
                     pagu              DECIMAL(18,2) NOT NULL DEFAULT 0,
                     pagu_awal         DECIMAL(18,2) NOT NULL DEFAULT 0,
@@ -101,6 +101,8 @@ class Pos_model extends CI_Model {
             $this->db->query('ALTER TABLE pos_anggaran ADD COLUMN jenis_anggaran_id INT UNSIGNED NULL AFTER penerima_id, ADD KEY idx_pos_jenis_anggaran (jenis_anggaran_id)');
         }
         if ($this->db->table_exists('pos_anggaran')) {
+            // Mendukung pos khusus Rapat/Fasilitas/Lainnya pada database lama.
+            $this->db->query("ALTER TABLE pos_anggaran MODIFY COLUMN tipe ENUM('DPRD','PENDAMPING','KEGIATAN') NOT NULL");
             $posFields = $this->db->list_fields('pos_anggaran');
             if (!in_array('pagu_awal', $posFields, true)) {
                 $this->db->query('ALTER TABLE pos_anggaran ADD COLUMN pagu_awal DECIMAL(18,2) NOT NULL DEFAULT 0 AFTER pagu');
@@ -500,11 +502,19 @@ class Pos_model extends CI_Model {
     }
 
     public function buat_pos_pendamping_custom(int $tahunId, string $kode, string $nama, ?int $jenisId = null, int $urutan = 99): int {
+        return $this->buat_pos_custom($tahunId, $kode, $nama, 'PENDAMPING', $jenisId, $urutan);
+    }
+
+    public function buat_pos_kegiatan_custom(int $tahunId, string $kode, string $nama, ?int $jenisId = null, int $urutan = 99): int {
+        return $this->buat_pos_custom($tahunId, $kode, $nama, 'KEGIATAN', $jenisId, $urutan);
+    }
+
+    private function buat_pos_custom(int $tahunId, string $kode, string $nama, string $tipe, ?int $jenisId = null, int $urutan = 99): int {
         $this->db->insert('pos_anggaran', [
             'tahun_anggaran_id' => $tahunId,
             'kode' => $kode,
             'nama' => $nama,
-            'tipe' => 'PENDAMPING',
+            'tipe' => $tipe,
             'penerima_id' => null,
             'jenis_anggaran_id' => $jenisId ?: null,
             'pagu' => 0,

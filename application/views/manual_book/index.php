@@ -123,6 +123,8 @@
         <h2 class="h6 fw-bold">Pos Pendamping</h2>
         <p>Pos pendamping melekat pada jabatan/kelompok pos, bukan langsung pada satu orang. Satu pos dapat memiliki beberapa pemegang melalui penugasan.</p>
         <ol><li>Gunakan pos baku yang tersedia atau klik <strong>Tambah Pos Pendamping</strong> bila ada jabatan baru.</li><li>Pilih user pendamping melalui tombol <strong>Tugaskan</strong>.</li><li>Jika pemegang berubah, tutup penugasan lama dan buat penugasan baru agar histori tetap ada.</li></ol>
+        <h2 class="h6 fw-bold">Pos Kegiatan / Rapat</h2>
+        <p>Untuk pagu khusus Rapat, Fasilitas, atau kegiatan lainnya, klik <strong>Tambah Pos Kegiatan</strong>. Pos ini tidak memiliki pemegang. Setelah dibuat, pilih pos tersebut pada <strong>Alokasi Pagu Kegiatan</strong> saat membuat kegiatan.</p>
         <h2 class="h6 fw-bold">Pagu awal dan revisi</h2>
         <table class="table table-sm table-bordered align-middle">
           <thead class="table-light"><tr><th>Kondisi</th><th>Perlakuan sistem</th></tr></thead>
@@ -146,7 +148,7 @@
         <ol><li>Pilih tahun anggaran yang masih terbuka.</li><li>Isi nomor surat tugas, tanggal, periode kegiatan, tempat, dan tema.</li><li>Pilih Jenis Kegiatan: Perjalanan Dinas, Rapat, Fasilitas, atau Lainnya.</li><li>Simpan untuk masuk ke halaman rincian.</li></ol>
         <h2 class="h6 fw-bold">B. Menambahkan peserta atau pendamping</h2>
         <p>Pilih penerima dari master DPRD atau identitas pendamping. Sistem menyediakan pos bawaan sesuai identitas, tetapi pengguna dapat memilih pos anggaran lain yang masih berada pada tahun kegiatan.</p>
-        <ul><li><strong>Dana awal</strong> wajib diisi sebagai alokasi/panjar peserta.</li><li><strong>Keterangan anggaran</strong> wajib diisi untuk setiap peserta, baik memakai anggaran sendiri maupun pos lain.</li><li>Jika satu orang memakai pos lain, pilih pos tersebut secara eksplisit. Sistem menyimpan <code>pos_anggaran_id</code> dan keterangannya.</li><li>Peserta yang sama tidak boleh ditambahkan dua kali dalam satu kegiatan.</li></ul>
+        <ul><li><strong>Dana awal/panjar</strong> bersifat opsional. Jika dikosongkan, sistem menyimpannya sebagai Rp0.</li><li><strong>Keterangan anggaran</strong> wajib diisi untuk setiap peserta, baik memakai anggaran sendiri maupun pos lain.</li><li>Jika satu orang memakai pos lain, pilih pos tersebut secara eksplisit. Sistem menyimpan <code>pos_anggaran_id</code> dan keterangannya.</li><li>Peserta yang sama tidak boleh ditambahkan dua kali dalam satu kegiatan.</li></ul>
         <h2 class="h6 fw-bold">C. Menambahkan alokasi kegiatan umum</h2>
         <p>Untuk rapat, fasilitas, atau kegiatan yang tidak berbasis peserta perjalanan, tambahkan alokasi pos pada bagian Alokasi Anggaran. Satu kegiatan boleh memakai beberapa pos dengan nilai alokasi berbeda.</p>
         <h2 class="h6 fw-bold">D. Mengisi rincian biaya</h2>
@@ -176,6 +178,7 @@
               <tr><td><strong>Rekap Realisasi Anggaran</strong></td><td>Rekap transaksi dengan filter tahun, status, periode, anggota, pos, dan komponen.</td><td><code>kegiatan</code> + <code>kegiatan_peserta</code>/<code>kegiatan_anggaran</code> + <code>kegiatan_biaya</code>.</td></tr>
               <tr><td><strong>Per Komponen Biaya</strong></td><td>Menjawab biaya terbesar digunakan untuk apa: tiket, uang harian, penginapan, konsumsi, dan sebagainya.</td><td>Pengelompokan berdasarkan <code>jenis_biaya_id</code>.</td></tr>
               <tr><td><strong>Per Anggota DPRD</strong></td><td>Melihat pagu, realisasi, sisa, dan jumlah kegiatan per anggota.</td><td>Pos DPRD dan peserta kegiatan yang terhubung ke <code>penerima_id</code>.</td></tr>
+              <tr><td><strong>Laporan Per Orang</strong></td><td>Rekap detail satu anggota, notulen, atau pendamping: tujuan, tanggal, komponen SPJ, sumber dana, total per perjalanan, dan sisa anggaran berjalan. Tersedia ekspor Excel.</td><td><code>kegiatan</code>, <code>kegiatan_peserta</code>, <code>kegiatan_biaya</code>, dan pos DPRD/Pendamping.</td></tr>
               <tr><td><strong>Per Pos Anggaran</strong></td><td>Membandingkan pagu, realisasi, sisa, tipe pos, dan jenis anggaran.</td><td><code>pos_anggaran</code> dan view <code>v_sisa_pos</code>.</td></tr>
               <tr><td><strong>History Verifikasi &amp; Audit</strong></td><td>Menelusuri keputusan verifikasi, perubahan pagu, user, waktu, dan alasan.</td><td>Status kegiatan, kolom verifikasi, <code>audit_log</code>, dan <code>riwayat_pagu_pos</code>.</td></tr>
             </tbody>

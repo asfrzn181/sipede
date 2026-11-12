@@ -145,7 +145,7 @@ CREATE TABLE `pos_anggaran` (
   `tahun_anggaran_id` INT UNSIGNED NOT NULL,
   `kode` VARCHAR(50) NOT NULL,
   `nama` VARCHAR(200) NOT NULL,
-  `tipe` ENUM('DPRD','PENDAMPING') NOT NULL,
+  `tipe` ENUM('DPRD','PENDAMPING','KEGIATAN') NOT NULL,
   `penerima_id` INT UNSIGNED NULL, -- Melekat tetap pada anggota DPRD
   `jenis_anggaran_id` INT UNSIGNED NULL,
   `pagu` DECIMAL(18,2) NOT NULL DEFAULT 0,

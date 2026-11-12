@@ -138,6 +138,11 @@
           <i class="bi bi-person-vcard"></i>
           <span class="menu-title">Per Anggota DPRD</span>
         </a>
+        <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'perorang') ? 'active' : '' ?>" href="<?= site_url('laporan/perorang') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-person-lines-fill"></i>
+          <span class="menu-title">Laporan Per Orang</span>
+        </a>
         <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'pos') ? 'active' : '' ?>" href="<?= site_url('laporan/pos') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-wallet2"></i>
