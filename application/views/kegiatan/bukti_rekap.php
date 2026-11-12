@@ -119,6 +119,7 @@
                       <li>
                         &bull; <?= html_escape($b['jenis_biaya_nama']) ?>
                         (<?= (float)$b['volume'] ?> &times; <?= rupiah($b['tarif']) ?>)
+                        <?php if(!empty($b['keterangan'])): ?><div class="text-muted ms-3">— <?= html_escape($b['keterangan']) ?></div><?php endif; ?>
                       </li>
                     <?php endforeach; ?>
                   </ul>

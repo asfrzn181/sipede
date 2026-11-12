@@ -494,6 +494,7 @@ class Kegiatan extends MY_Controller
         $jenisId = (int)($payload['jenis_biaya_id'] ?? $this->input->post('jenis_biaya_id'));
         $volume = (float)($payload['volume'] ?? $this->input->post('volume'));
         $tarif = clean_number($payload['tarif'] ?? $this->input->post('tarif'));
+        $keterangan = trim((string)($payload['keterangan'] ?? $this->input->post('keterangan', TRUE)));
         if (!$kegiatanId || !$allocationId || !$jenisId || $volume <= 0 || $tarif < 0) {
             $this->respond(FALSE, 'Alokasi, komponen biaya, volume, dan tarif wajib diisi dengan benar.', array(), array(), 422);
         }
@@ -505,7 +506,7 @@ class Kegiatan extends MY_Controller
         if ($newTotal > (float)$allocation['nilai_alokasi']) {
             $this->respond(FALSE, 'Realisasi melebihi alokasi kegiatan. Alokasi: ' . rupiah($allocation['nilai_alokasi']), array(), array(), 422);
         }
-        $costId = $this->Kegiatan_model->save_biaya_umum($kegiatanId, $allocationId, $jenisId, $volume, (float)$tarif);
+        $costId = $this->Kegiatan_model->save_biaya_umum($kegiatanId, $allocationId, $jenisId, $volume, (float)$tarif, $keterangan ?: null);
         if (!$costId) $this->respond(FALSE, 'Biaya umum gagal disimpan.', array(), array(), 422);
         $this->Audit_model->write('KEGIATAN_BIAYA', $costId, 'TAMBAH_BIAYA_UMUM', array(), $payload, (int)$this->user['id']);
         $this->respond(TRUE, 'Biaya kegiatan berhasil disimpan.');

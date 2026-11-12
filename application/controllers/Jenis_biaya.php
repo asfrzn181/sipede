@@ -48,8 +48,8 @@ class Jenis_biaya extends MY_Controller {
                 '<span class="fw-medium">' . html_escape($row['nama']) . '</span>',
                 '<span class="badge text-bg-light border">' . html_escape($row['satuan'] ?: '-') . '</span>',
                 !empty($row['tampil_di_kegiatan'])
-                    ? '<span class="badge text-bg-success">Tampil</span>'
-                    : '<span class="badge text-bg-secondary">Tidak tampil</span>',
+                    ? '<span class="badge text-bg-success">Baku otomatis</span>'
+                    : '<span class="badge text-bg-secondary">Opsional</span>',
                 '<span class="small text-muted">' . html_escape($row['keterangan'] ?: '-') . '</span>'
             );
             if ($canManage) {

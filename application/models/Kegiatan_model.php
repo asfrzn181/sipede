@@ -2,6 +2,22 @@
 
 class Kegiatan_model extends CI_Model {
 
+    private static bool $schemaChecked = false;
+
+    public function __construct() {
+        parent::__construct();
+        $this->ensure_schema();
+    }
+
+    private function ensure_schema(): void {
+        if (self::$schemaChecked || !$this->db->table_exists('kegiatan_biaya')) return;
+        self::$schemaChecked = true;
+        $fields = $this->db->list_fields('kegiatan_biaya');
+        if (!in_array('keterangan', $fields, true)) {
+            $this->db->query('ALTER TABLE kegiatan_biaya ADD COLUMN keterangan TEXT NULL AFTER jenis_biaya_id');
+        }
+    }
+
     private function apply_workflow_tab(array $filter): void {
         if (($filter['tab'] ?? '') === 'history') {
             $this->db->where('k.dicetak_at IS NOT NULL', NULL, FALSE);
@@ -282,6 +298,7 @@ class Kegiatan_model extends CI_Model {
                 'kegiatan_peserta_id' => $kegiatanPesertaId,
                 'kegiatan_anggaran_id' => $kegiatanAnggaranId,
                 'jenis_biaya_id'      => $jenisBiayaId,
+                'keterangan'         => trim((string)($cost['keterangan'] ?? '')) ?: null,
                 'volume'              => $volume,
                 'tarif'               => $tarif,
             ));
@@ -401,13 +418,14 @@ class Kegiatan_model extends CI_Model {
         return (bool)$this->db->where('id', $id)->delete('kegiatan_anggaran');
     }
 
-    public function save_biaya_umum(int $kegiatanId, int $alokasiId, int $jenisBiayaId, float $volume, float $tarif): int {
+    public function save_biaya_umum(int $kegiatanId, int $alokasiId, int $jenisBiayaId, float $volume, float $tarif, ?string $keterangan = null): int {
         $allocation = $this->db->get_where('kegiatan_anggaran', array('id' => $alokasiId, 'kegiatan_id' => $kegiatanId))->row_array();
         if (!$allocation) return 0;
         $this->db->insert('kegiatan_biaya', array(
             'kegiatan_peserta_id' => null,
             'kegiatan_anggaran_id' => $alokasiId,
             'jenis_biaya_id' => $jenisBiayaId,
+            'keterangan' => trim((string)$keterangan) ?: null,
             'volume' => max(0, $volume),
             'tarif' => max(0, $tarif),
         ));

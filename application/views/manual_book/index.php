@@ -105,7 +105,7 @@
             <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#masterBiaya">5. Jenis Biaya</button></h2>
             <div id="masterBiaya" class="accordion-collapse collapse" data-bs-parent="#masterAccordion"><div class="accordion-body small">
               <p>Jenis Biaya adalah item yang muncul ketika rincian biaya kegiatan diisi, misalnya uang harian, penginapan, tiket, sewa kendaraan, konsumsi, ATK, atau dokumentasi.</p>
-              <ul><li><strong>Tampil di Kegiatan</strong> aktif: muncul sebagai pilihan input.</li><li>Tidak aktif: tetap menjadi referensi lama tetapi tidak ditawarkan untuk input baru.</li><li>Keterangan tambahan membantu menjelaskan standar atau syarat pembayarannya.</li></ul>
+              <ul><li><strong>Baku Otomatis</strong> aktif: otomatis dibuat sebagai baris awal saat peserta baru ditambahkan.</li><li>Jika tidak dicentang, komponen tetap aktif dan dapat ditambahkan manual melalui tombol tambah komponen.</li><li>Keterangan master menjelaskan standar umum, sedangkan keterangan detail di setiap baris menjelaskan kasus spesifik, misalnya <em>Uang Harian 2x untuk keberangkatan dan kepulangan</em>.</li></ul>
               <div class="alert alert-light border mb-0">Sumber data: <code>jenis_biaya</code>. Nilai transaksi tetap disimpan di <code>kegiatan_biaya</code>.</div>
             </div></div>
           </div>

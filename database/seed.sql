@@ -194,16 +194,17 @@ INSERT INTO `sumber_dana` (`kode`, `nama`, `is_active`) VALUES
 ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `is_active` = 1;
 
 -- Jenis Biaya Perjalanan Dinas
-INSERT INTO `jenis_biaya` (`kode`, `nama`, `satuan`, `is_active`) VALUES
-('TRANSPORT',      'Transportasi',        'orang',       1),
-('UANG_HARIAN',    'Uang Harian',         'orang/hari',  1),
-('PENGINAPAN',     'Penginapan',          'malam',       1),
-('TIKET',          'Tiket Perjalanan',    'tiket',       1),
-('SEWA_KENDARAAN', 'Sewa Kendaraan',      'hari',        1),
-('KONSUMSI',       'Konsumsi',            'orang',       1),
-('ATK',            'Alat Tulis Kantor',   'paket',       1),
-('DOKUMENTASI',    'Dokumentasi Kegiatan','kegiatan',    1)
-ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `satuan` = VALUES(`satuan`), `is_active` = 1;
+INSERT INTO `jenis_biaya` (`kode`, `nama`, `satuan`, `tampil_di_kegiatan`, `is_active`) VALUES
+('UANG_HARIAN',    'Uang Harian',          'orang/hari', 1, 1),
+('TRANSPORT',      'Uang Transport',       'orang',      1, 1),
+('UANG_REPRESENTATIF', 'Uang Representatif','orang/hari', 1, 1),
+('PENGINAPAN',     'Uang Penginapan',      'malam',      1, 1),
+('TIKET',          'Tiket Perjalanan',     'tiket',      0, 1),
+('SEWA_KENDARAAN', 'Sewa Kendaraan',       'hari',       0, 1),
+('KONSUMSI',       'Konsumsi',             'orang',      0, 1),
+('ATK',            'Alat Tulis Kantor',    'paket',      0, 1),
+('DOKUMENTASI',    'Dokumentasi Kegiatan', 'kegiatan',   0, 1)
+ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `satuan` = VALUES(`satuan`), `tampil_di_kegiatan` = VALUES(`tampil_di_kegiatan`), `is_active` = 1;
 
 -- Jenis Kegiatan dan Kelompok Anggaran (dipakai bersama oleh seluruh modul kegiatan)
 INSERT INTO `jenis_kegiatan` (`kode`, `nama`, `subjenis_json`, `urutan`) VALUES

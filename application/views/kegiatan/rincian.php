@@ -275,6 +275,7 @@
                   'biaya'             => array_map(function($b){
                     return array(
                       'jenis_biaya_id' => $b['jenis_biaya_id'],
+                      'keterangan'     => $b['keterangan'] ?? '',
                       'volume'         => (float)$b['volume'],
                       'tarif'          => (float)$b['tarif']
                     );
@@ -336,6 +337,7 @@
                   <td class="text-center text-muted small"><?= $bIdx + 1 ?></td>
                   <td class="fw-medium">
                     <?= html_escape($b['jenis_biaya_nama']) ?>
+                    <?php if(!empty($b['keterangan'])): ?><div class="small text-primary"><i class="bi bi-info-circle me-1"></i><?= html_escape($b['keterangan']) ?></div><?php endif; ?>
                     <?php if($b['satuan']): ?>
                       <span class="text-muted small">(<?= html_escape($b['satuan']) ?>)</span>
                     <?php endif; ?>
@@ -477,6 +479,7 @@
           <div class="mb-3"><label class="form-label small fw-semibold">Alokasi Anggaran</label><input class="form-control" id="biayaUmumAlokasiLabel" readonly></div>
           <div class="mb-3"><label class="form-label small fw-semibold">Komponen Biaya <span class="text-danger">*</span></label><select class="form-select" name="jenis_biaya_id" required><option value="">-- Pilih Komponen --</option><?php foreach($jenis_biaya as $jb): if(!$jb['is_active']) continue; ?><option value="<?= (int)$jb['id'] ?>"><?= html_escape($jb['nama']) ?> (<?= html_escape($jb['satuan'] ?: '-') ?>)</option><?php endforeach; ?></select></div>
           <div class="row g-3"><div class="col-5"><label class="form-label small fw-semibold">Volume</label><input type="number" min="0.01" step="0.01" class="form-control" name="volume" value="1" required></div><div class="col-7"><label class="form-label small fw-semibold">Tarif Satuan</label><input type="text" class="form-control input-rupiah" name="tarif" required placeholder="0"></div></div>
+          <div class="mt-3"><label class="form-label small fw-semibold">Keterangan Detail</label><textarea class="form-control" name="keterangan" rows="2" placeholder="Contoh: Uang Harian 2x untuk keberangkatan dan kepulangan"></textarea></div>
         </div>
         <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-success"><i class="bi bi-save me-1"></i>Simpan Biaya</button></div>
       </form>
@@ -631,15 +634,16 @@ window.MasterJenisBiaya = <?= json_encode($jenis_biaya, JSON_HEX_TAG|JSON_HEX_AP
 
 $(function(){
   // Template baris biaya baru
-  function createBiayaRow(jenisId, volume, tarif) {
+  function createBiayaRow(jenisId, volume, tarif, keterangan, defaultOnly) {
     var opts = '<option value="">— Tanpa jenis biaya (Biaya Umum) —</option>';
     (window.MasterJenisBiaya || []).forEach(function(j){
-      if (!j.tampil_di_kegiatan && String(j.id) !== String(jenisId)) return;
+      if (defaultOnly && String(j.tampil_di_kegiatan) !== '1' && String(j.id) !== String(jenisId)) return;
       opts += '<option value="' + j.id + '" data-keterangan="' + escapeHtml(j.keterangan || '') + '" ' + (String(j.id) === String(jenisId) ? 'selected' : '') + '>' + escapeHtml(j.nama) + '</option>';
     });
 
     var vol = volume || 1;
     var tar = tarif || 0;
+    var detailKeterangan = keterangan || '';
     var sub = vol * tar;
 
     var rowHtml = $(
@@ -648,6 +652,7 @@ $(function(){
           '<select class="form-select form-select-sm row-jenis">' + opts + '</select>' +
           '<div class="form-text small text-muted" style="font-size:0.7rem">Opsional</div>' +
           '<div class="row-jenis-keterangan small text-muted fst-italic mt-1"></div>' +
+          '<textarea class="form-control form-control-sm row-keterangan mt-1" rows="1" placeholder="Keterangan detail, contoh: 2x perjalanan"></textarea>' +
         '</td>' +
         '<td>' +
           '<input type="number" step="0.01" min="0" class="form-control form-control-sm text-center row-volume" value="' + vol + '">' +
@@ -668,7 +673,21 @@ $(function(){
     );
     var selectedOpt = rowHtml.find('.row-jenis option:selected');
     rowHtml.find('.row-jenis-keterangan').text(selectedOpt.data('keterangan') || '');
+    rowHtml.find('.row-keterangan').val(detailKeterangan);
     return rowHtml;
+  }
+
+  function appendDefaultBiayaRows() {
+    var defaults = (window.MasterJenisBiaya || []).filter(function(j){
+      return String(j.tampil_di_kegiatan) === '1';
+    });
+    if (!defaults.length) {
+      $('#tbodyBiayaRows').append(createBiayaRow('', 1, 0, '', false));
+      return;
+    }
+    defaults.forEach(function(j){
+      $('#tbodyBiayaRows').append(createBiayaRow(j.id, 1, 0, '', true));
+    });
   }
 
   $(document).on('change', '.row-jenis', function(){
@@ -795,7 +814,7 @@ $(function(){
     }
     $('#modalPesertaTitle').html('<i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Peserta / Pendamping');
     $('#tbodyBiayaRows').empty();
-    $('#tbodyBiayaRows').append(createBiayaRow('', 1, 0));
+    appendDefaultBiayaRows();
     $('#inpDanaAwal').val('');
     hitungTotalModal();
     bootstrap.Modal.getOrCreateInstance('#modalPeserta').show();
@@ -829,10 +848,10 @@ $(function(){
     $('#tbodyBiayaRows').empty();
     if (p.biaya && p.biaya.length > 0) {
       p.biaya.forEach(function(b){
-        $('#tbodyBiayaRows').append(createBiayaRow(b.jenis_biaya_id, b.volume, b.tarif));
+        $('#tbodyBiayaRows').append(createBiayaRow(b.jenis_biaya_id, b.volume, b.tarif, b.keterangan || ''));
       });
     } else {
-      $('#tbodyBiayaRows').append(createBiayaRow('', 1, 0));
+      appendDefaultBiayaRows();
     }
     hitungTotalModal();
     bootstrap.Modal.getOrCreateInstance('#modalPeserta').show();
@@ -840,7 +859,7 @@ $(function(){
 
   // Tambah baris biaya
   $('#btnTambahBarisBiaya').on('click', function(){
-    $('#tbodyBiayaRows').append(createBiayaRow('', 1, 0));
+    $('#tbodyBiayaRows').append(createBiayaRow('', 1, 0, '', false));
   });
 
   // Hapus baris biaya
@@ -887,6 +906,7 @@ $(function(){
       if (vol > 0 && tar > 0) {
         biayaList.push({
           jenis_biaya_id: jenisId,
+          keterangan: $.trim($(this).find('.row-keterangan').val() || ''),
           volume: vol,
           tarif: tar
         });
@@ -1009,7 +1029,8 @@ $(function(){
         kegiatan_id: $('[name="kegiatan_id"]').first().val(),
         kegiatan_anggaran_id: $('#biayaUmumAlokasiId').val(),
         jenis_biaya_id: $('#formBiayaUmum [name="jenis_biaya_id"]').val(),
-        volume: volume, tarif: tarif
+        volume: volume, tarif: tarif,
+        keterangan: $.trim($('#formBiayaUmum [name="keterangan"]').val() || '')
       }),
       contentType: 'application/json'
     }).done(function(r){

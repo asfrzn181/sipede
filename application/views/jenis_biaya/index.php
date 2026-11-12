@@ -17,7 +17,7 @@
             <th style="width: 140px;">Kode</th>
             <th>Nama Jenis Biaya</th>
             <th style="width: 180px;">Satuan</th>
-            <th style="width: 140px;">Tampil di Kegiatan</th>
+            <th style="width: 180px;">Baku Otomatis</th>
             <th>Keterangan</th>
             <?php if(!empty($can_manage)): ?><th class="no-sort text-end" style="width: 80px;">Aksi</th><?php endif; ?>
           </tr>
@@ -48,7 +48,7 @@
           <textarea class="form-control mb-3" name="keterangan" rows="2" placeholder="Contoh: Dibayarkan sesuai standar perjalanan dinas."></textarea>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="tampil_di_kegiatan" value="1" id="tampilDiKegiatan" checked>
-            <label class="form-check-label small" for="tampilDiKegiatan">Tampilkan pada input kegiatan</label>
+            <label class="form-check-label small" for="tampilDiKegiatan">Jadikan komponen baku otomatis saat tambah peserta</label>
           </div>
         </div>
         <div class="modal-footer">

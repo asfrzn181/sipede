@@ -341,6 +341,7 @@ CREATE TABLE `kegiatan_biaya` (
   `kegiatan_peserta_id` INT UNSIGNED NULL,
   `kegiatan_anggaran_id` INT UNSIGNED NULL,
   `jenis_biaya_id` INT UNSIGNED NOT NULL,
+  `keterangan` TEXT NULL,
   `volume` DECIMAL(14,2) NOT NULL DEFAULT 0,
   `tarif` DECIMAL(18,2) NOT NULL DEFAULT 0,
   `subtotal` DECIMAL(18,2) AS (`volume` * `tarif`) STORED,
@@ -497,6 +498,7 @@ SELECT
   COALESCE(pa.nama, sd.nama, 'APBD') AS sumber_dana_nama,
   kp.sumber_dana_id, sd.kode AS sumber_dana_kode,
   j.id AS jenis_biaya_id, j.kode AS jenis_biaya_kode, j.nama AS jenis_biaya_nama,
+  kb.keterangan,
   kb.volume, kb.tarif, (kb.volume * kb.tarif) AS subtotal
 FROM kegiatan k
 JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id IS NOT NULL
@@ -514,6 +516,7 @@ SELECT
   NULL AS tipe, NULL AS jabatan, ka.pos_anggaran_id, pa.nama AS sumber_dana_nama,
   NULL AS sumber_dana_id, NULL AS sumber_dana_kode,
   j.id AS jenis_biaya_id, j.kode AS jenis_biaya_kode, j.nama AS jenis_biaya_nama,
+  kb.keterangan,
   kb.volume, kb.tarif, (kb.volume * kb.tarif) AS subtotal
 FROM kegiatan k
 JOIN kegiatan_anggaran ka ON ka.kegiatan_id = k.id
