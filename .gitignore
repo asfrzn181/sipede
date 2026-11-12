@@ -9,6 +9,8 @@
 # Data import lokal / operasional (jangan commit)
 /database/import_anggota_*.sql
 /database/inject_*.sql
+/database/*inject*.sql
+/database/*anggota*.sql
 
 # Temporary & Cache files
 /application/cache/*

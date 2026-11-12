@@ -51,6 +51,6 @@ Sesuaikan `DEPLOYPATH` pada `.cpanel.yml`. Deployment tidak menyalin SQL ke publ
 ## Verifikasi
 
 - Buka `APP_BASE_URL`.
-- Uji login akun seed dan ganti password awal `admin123`.
+- Uji login akun seed dan segera ganti password awal. Akun Super Admin menggunakan username `superadmin` dan password `setwan2026sipede`, sedangkan akun Administrator menggunakan password `admin123`.
 - Pastikan `/application`, `/vendor`, `/database`, dan `/tests` mengembalikan 403.
 - Uji dashboard, kegiatan, laporan Excel, dan PDF.

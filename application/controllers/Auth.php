@@ -8,7 +8,7 @@ class Auth extends MY_Controller
     {
         if ($this->user) {
             $dest = $this->rbac->can_any(array('dashboard.view_all', 'dashboard.view_own')) ? 'dashboard' : 'laporan';
-            redirect($dest);
+            redirect($dest, 'location', 302);
         }
         $this->load->view('layout/auth');
     }
@@ -18,7 +18,7 @@ class Auth extends MY_Controller
         if($this->input->is_ajax_request()){$this->respond(FALSE,$message,array(),array(),$code);}
         $this->session->set_flashdata('login_error',$message);
         session_write_close();
-        redirect('auth');
+        redirect('auth', 'location', 302);
     }
 
     public function login(): void
@@ -42,8 +42,8 @@ class Auth extends MY_Controller
         }
         if($this->input->is_ajax_request())$this->respond(TRUE,'Selamat datang.',array('redirect'=>site_url($target)));
         session_write_close();
-        redirect($target);
+        redirect($target, 'location', 302);
     }
 
-    public function logout(): void{$this->session->sess_destroy();session_write_close();redirect('auth');}
+    public function logout(): void{$this->session->sess_destroy();session_write_close();redirect('auth', 'location', 302);}
 }

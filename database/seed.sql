@@ -5,8 +5,10 @@
 
 -- Pilih database tujuan terlebih dahulu di phpMyAdmin/cPanel.
 
--- Password default untuk akun administrator: admin123
+-- Password default akun admin: admin123
 SET @password_default = '$2y$10$nZPUGsK/.d9Z1bafYrSlFOgeMlEGx9Yvk/bMD0YT7.3QAw/g96KYK';
+-- Password default akun superadmin: setwan2026sipede
+SET @password_superadmin = '$2y$10$5vum7xHiamMexIOhXWONtuDDWHpOThIwQbZvWUP1ejISW5lPIH7.q';
 
 -- -----------------------------------------------------------------------------
 -- 1. Inisialisasi Role Sistem
@@ -159,9 +161,9 @@ SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.kode IN (
 -- -----------------------------------------------------------------------------
 -- 4. Akun Administrator (HANYA INI YANG DI-SEED)
 -- -----------------------------------------------------------------------------
--- Akun 1: superadmin (Password: admin123)
+-- Akun 1: superadmin (Username: superadmin; Password: setwan2026sipede)
 INSERT INTO `users` (`username`, `password`, `nama`, `role_id`, `is_active`, `wajib_ganti_password`)
-SELECT 'superadmin', @password_default, 'Super Administrator', r.id, 1, 0
+SELECT 'superadmin', @password_superadmin, 'Super Administrator', r.id, 1, 0
 FROM `roles` r WHERE r.kode = 'SUPERADMIN'
 ON DUPLICATE KEY UPDATE 
   `role_id` = VALUES(`role_id`), 

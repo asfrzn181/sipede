@@ -20,7 +20,7 @@ class MY_Controller extends CI_Controller
             if ($this->input->is_ajax_request()) {
                 json_response(FALSE, 'Sesi berakhir. Silakan masuk kembali.', array(), array(), 401);
             }
-            redirect('auth');
+            redirect('auth', 'location', 302);
         }
         $this->rbac->load((int)($this->user['id'] ?? 0));
     }

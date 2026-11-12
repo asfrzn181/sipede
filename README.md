@@ -96,4 +96,4 @@ Jika hosting Anda mendukung fitur Git bawaan cPanel:
 | Username | Role | Password Awal |
 | :--- | :--- | :--- |
 | **`admin`** | Administrator | **`admin123`** |
-| **`superadmin`** | Super Admin | **`admin123`** |
+| **`superadmin`** | Super Admin | **`setwan2026sipede`** |
