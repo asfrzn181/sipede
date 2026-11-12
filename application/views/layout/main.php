@@ -81,6 +81,43 @@
         </a>
         <?php endif; ?>
 
+        <!-- MASTER DATA -->
+        <?php if(can('tahun.view') || can('penerima.view') || can('jenis_biaya.view') || can('anggaran.view_all')): ?>
+        <div class="nav-section">MASTER DATA</div>
+        <?php endif; ?>
+
+        <?php if(can('penerima.view')): ?>
+        <a class="nav-link <?= ($cClass === 'penerima') ? 'active' : '' ?>" href="<?= site_url('penerima') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-person-vcard"></i>
+          <span class="menu-title">Anggota DPRD</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if(can('tahun.view')): ?>
+        <a class="nav-link <?= ($cClass === 'tahun') ? 'active' : '' ?>" href="<?= site_url('tahun') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-calendar3"></i>
+          <span class="menu-title">Tahun Anggaran</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if(can('anggaran.view_all')): ?>
+        <a class="nav-link <?= ($cClass === 'jenis_anggaran') ? 'active' : '' ?>" href="<?= site_url('jenis_anggaran') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-diagram-3"></i>
+          <span class="menu-title">Jenis Anggaran</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if(can('jenis_biaya.view')): ?>
+        <a class="nav-link <?= ($cClass === 'jenis_biaya') ? 'active' : '' ?>" href="<?= site_url('jenis_biaya') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-tags"></i>
+          <span class="menu-title">Jenis Biaya</span>
+        </a>
+        <?php endif; ?>
+
         <?php if(can('kegiatan.view_all') || can('kegiatan.view_own') || can('laporan.view_all') || can('laporan.view_own')): ?>
         <div class="nav-section">LAPORAN &amp; ANALITIK</div>
         <a class="nav-link <?= ($cClass === 'rekapitulasi') ? 'active' : '' ?>" href="<?= site_url('rekapitulasi') ?>">
@@ -113,35 +150,6 @@
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-shield-check"></i>
           <span class="menu-title">History Verifikasi &amp; Audit</span>
-        </a>
-        <?php endif; ?>
-
-        <!-- MASTER DATA -->
-        <?php if(can('tahun.view') || can('penerima.view') || can('jenis_biaya.view')): ?>
-        <div class="nav-section">MASTER DATA</div>
-        <?php endif; ?>
-
-        <?php if(can('penerima.view')): ?>
-        <a class="nav-link <?= ($cClass === 'penerima' && $this->uri->segment(2) !== 'pendamping') ? 'active' : '' ?>" href="<?= site_url('penerima') ?>">
-          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
-          <i class="bi bi-people"></i>
-          <span class="menu-title">Penerima</span>
-        </a>
-        <?php endif; ?>
-
-        <?php if(can('tahun.view')): ?>
-        <a class="nav-link <?= ($cClass === 'tahun') ? 'active' : '' ?>" href="<?= site_url('tahun') ?>">
-          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
-          <i class="bi bi-calendar3"></i>
-          <span class="menu-title">Tahun Anggaran</span>
-        </a>
-        <?php endif; ?>
-
-        <?php if(can('jenis_biaya.view')): ?>
-        <a class="nav-link <?= ($cClass === 'jenis_biaya') ? 'active' : '' ?>" href="<?= site_url('jenis_biaya') ?>">
-          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
-          <i class="bi bi-tags"></i>
-          <span class="menu-title">Jenis Biaya</span>
         </a>
         <?php endif; ?>
 

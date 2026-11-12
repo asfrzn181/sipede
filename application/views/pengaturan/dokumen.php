@@ -44,12 +44,12 @@
                 <label class="form-label fw-bold text-dark mb-1">Logo Instansi / Pemerintah Daerah</label>
                 <div class="d-flex align-items-center gap-3">
                   <div class="p-2 border rounded bg-light text-center" style="width: 100px; height: 100px;">
-                    <img id="imgLogoPreview" src="<?= base_url($setting['logo_path']) ?>" alt="Logo Instansi" class="img-fluid h-100" style="object-fit: contain;">
+                    <img id="imgLogoPreview" src="<?= html_escape($setting['logo_path']) ?>" alt="Logo Sekretariat DPRD Kabupaten Bangka" class="img-fluid h-100" style="object-fit: contain;">
                   </div>
                   <div class="flex-grow-1">
-                    <input class="form-control" type="file" name="logo" id="inpLogoFile" accept="image/png, image/jpeg, image/jpg, image/svg+xml, image/webp">
+                    <div class="form-control bg-light text-muted">Logo aplikasi Bangka</div>
                     <div class="form-text small text-muted">
-                      Format: PNG, JPG, JPEG, SVG, WebP. Maksimal 3 MB. Disarankan menggunakan gambar berlatar transparan.
+                      Logo dokumen otomatis menggunakan logo aplikasi dari bangka.go.id.
                     </div>
                   </div>
                 </div>
@@ -114,51 +114,14 @@
                 <div class="form-text small text-muted">Akan ditampilkan pada tanggal penetapan dokumen (Contoh: "<em>Cibinong, 10 November 2026</em>").</div>
               </div>
 
-              <!-- Accordion Penandatangan 3 Pejabat -->
+              <!-- Accordion Penandatangan 2 Pejabat -->
               <div class="accordion" id="accSignatories">
-                
-                <!-- 1. Pengguna Anggaran -->
-                <div class="accordion-item border shadow-none mb-3 rounded overflow-hidden">
-                  <h2 class="accordion-header">
-                    <button class="accordion-button fw-bold bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#accPA" aria-expanded="true">
-                      <i class="bi bi-person-badge text-primary me-2 fs-5"></i>
-                      <span>1. Pengguna Anggaran (PA / Sekretaris DPRD)</span>
-                    </button>
-                  </h2>
-                  <div id="accPA" class="accordion-collapse collapse show">
-                    <div class="accordion-body p-3 bg-white">
-                      <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                          <label class="form-label small fw-semibold">Label Atas Tanda Tangan</label>
-                          <input type="text" class="form-control" name="pa_label" id="inpPaLabel" value="<?= html_escape($setting['pa_label']) ?>" placeholder="Contoh: Mengetahui,">
-                        </div>
-                        <div class="col-12 col-md-6">
-                          <label class="form-label small fw-semibold">Jabatan Pengesahan</label>
-                          <input type="text" class="form-control" name="pa_jabatan" id="inpPaJabatan" value="<?= html_escape($setting['pa_jabatan']) ?>" placeholder="Contoh: Sekretaris DPRD Selaku Pengguna Anggaran">
-                        </div>
-                        <div class="col-12 col-md-6">
-                          <label class="form-label small fw-semibold">Nama Lengkap &amp; Gelar</label>
-                          <input type="text" class="form-control" name="pa_nama" id="inpPaNama" value="<?= html_escape($setting['pa_nama']) ?>" placeholder="Contoh: Drs. H. AHMAD FAUZI, M.Si" required>
-                        </div>
-                        <div class="col-12 col-md-6">
-                          <label class="form-label small fw-semibold">Pangkat / Golongan</label>
-                          <input type="text" class="form-control" name="pa_pangkat" id="inpPaPangkat" value="<?= html_escape($setting['pa_pangkat']) ?>" placeholder="Contoh: Pembina Utama Muda (IV/c)">
-                        </div>
-                        <div class="col-12">
-                          <label class="form-label small fw-semibold">NIP (Nomor Induk Pegawai)</label>
-                          <input type="text" class="form-control" name="pa_nip" id="inpPaNip" value="<?= html_escape($setting['pa_nip']) ?>" placeholder="Contoh: 19750812 199803 1 002">
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 2. PPTK -->
+                <!-- 1. PPTK -->
                 <div class="accordion-item border shadow-none mb-3 rounded overflow-hidden">
                   <h2 class="accordion-header">
                     <button class="accordion-button fw-bold bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accPPTK">
                       <i class="bi bi-briefcase text-info me-2 fs-5"></i>
-                      <span>2. Pejabat Pelaksana Teknis Kegiatan (PPTK)</span>
+                      <span>1. Pejabat Pelaksana Teknis Kegiatan (PPTK)</span>
                     </button>
                   </h2>
                   <div id="accPPTK" class="accordion-collapse collapse">
@@ -189,12 +152,12 @@
                   </div>
                 </div>
 
-                <!-- 3. Bendahara Pengeluaran -->
+                <!-- 2. Bendahara Pengeluaran -->
                 <div class="accordion-item border shadow-none rounded overflow-hidden">
                   <h2 class="accordion-header">
                     <button class="accordion-button fw-bold bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accBendahara">
                       <i class="bi bi-cash-coin text-success me-2 fs-5"></i>
-                      <span>3. Bendahara Pengeluaran</span>
+                      <span>2. Bendahara Pengeluaran</span>
                     </button>
                   </h2>
                   <div id="accBendahara" class="accordion-collapse collapse">
@@ -315,10 +278,6 @@ $(function(){
 
     // Update Signatures
     var kota = $('#inpKota').val() || 'Kota';
-    var paNama = $('#inpPaNama').val() || '-';
-    var paPangkat = $('#inpPaPangkat').val() || '';
-    var paNip = $('#inpPaNip').val() || '-';
-
     var pptkNama = $('#inpPptkNama').val() || '-';
     var pptkPangkat = $('#inpPptkPangkat').val() || '';
     var pptkNip = $('#inpPptkNip').val() || '-';
@@ -327,35 +286,17 @@ $(function(){
     var benPangkat = $('#inpBendaharaPangkat').val() || '';
     var benNip = $('#inpBendaharaNip').val() || '-';
 
-    // Kolom 1 PA
-    $('.tanda-tangan-block .col-4:nth-child(1) strong.text-decoration-underline').text(paNama);
-    $('.tanda-tangan-block .col-4:nth-child(1) span:contains("NIP")').text('NIP. ' + paNip);
-
-    // Kolom 2 PPTK
-    $('.tanda-tangan-block .col-4:nth-child(2) strong.text-decoration-underline').text(pptkNama);
-    $('.tanda-tangan-block .col-4:nth-child(2) span:contains("NIP")').text('NIP. ' + pptkNip);
-
-    // Kolom 3 Bendahara
-    $('.tanda-tangan-block .col-4:nth-child(3) strong.text-decoration-underline').text(benNama);
-    $('.tanda-tangan-block .col-4:nth-child(3) span:contains("NIP")').text('NIP. ' + benNip);
-    $('.tanda-tangan-block .col-4:nth-child(3) .ttd-header span:first-child').text(kota + ', ' + '<?= tgl_indo(date('Y-m-d')) ?>');
+    // Kolom 1 PPTK dan kolom 2 Bendahara Pengeluaran
+    var ttdCols = $('#previewTtdContainer .tanda-tangan-block .col-6');
+    ttdCols.eq(0).find('strong.text-decoration-underline').text(pptkNama);
+    ttdCols.eq(0).find('span:contains("NIP")').text('NIP. ' + pptkNip);
+    ttdCols.eq(1).find('strong.text-decoration-underline').text(benNama);
+    ttdCols.eq(1).find('span:contains("NIP")').text('NIP. ' + benNip);
+    ttdCols.eq(1).find('.ttd-header span:first-child').text(kota + ', ' + '<?= tgl_indo(date('Y-m-d')) ?>');
   }
 
   // Bind live preview on input
   $('#formPengaturanDokumen input, #formPengaturanDokumen textarea').on('input keyup change', updateLivePreview);
-
-  // File logo preview
-  $('#inpLogoFile').on('change', function(){
-    var file = this.files && this.files[0];
-    if(file){
-      var reader = new FileReader();
-      reader.onload = function(e){
-        $('#imgLogoPreview').attr('src', e.target.result);
-        $('.kop-logo').attr('src', e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  });
 
   // Submit form with FormData
   $('#formPengaturanDokumen').on('submit', function(e){

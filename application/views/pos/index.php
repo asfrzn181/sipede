@@ -28,6 +28,10 @@
             data-bs-toggle="modal" data-bs-target="#modalPaguStandar">
       <i class="bi bi-sliders"></i> Terapkan Pagu Standar
     </button>
+    <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+            data-bs-toggle="modal" data-bs-target="#modalTambahPosPendamping">
+      <i class="bi bi-plus-circle"></i> Tambah Pos Pendamping
+    </button>
   </div>
   <?php endif; ?>
 </div>
@@ -110,7 +114,7 @@
                 <td class="fw-semibold"><?= html_escape($r['nama']) ?><div class="small text-muted"><?= html_escape($r['jenis_anggaran_nama'] ?? 'Belum dikategorikan') ?></div></td>
                 <td><span class="badge text-bg-<?= $kelClass ?>"><?= html_escape($kel) ?></span></td>
                 <td class="small text-muted"><?= html_escape($r['pemegang_jabatan'] ?? '-') ?></td>
-                <td class="text-end fw-bold text-primary"><?= rupiah($pagu) ?></td>
+                <td class="text-end fw-bold text-primary"><?= rupiah($pagu) ?><div class="small text-muted fw-normal">Awal: <?= rupiah((float)($r['pagu_awal'] ?? 0)) ?></div></td>
                 <td class="text-end text-muted"><?= rupiah($realisasi) ?></td>
                 <td class="text-end fw-semibold <?= $sisa < 0 ? 'text-danger' : ($sisa == 0 && $pagu > 0 ? 'text-warning' : 'text-success') ?>">
                   <?= rupiah($sisa) ?>
@@ -123,6 +127,7 @@
                     data-pos-nama="<?= html_escape($r['nama']) ?>"
                     data-pos-tipe="DPRD"
                     data-pagu="<?= $pagu ?>"
+                    data-pagu-awal="<?= (float)($r['pagu_awal'] ?? 0) ?>"
                     data-realisasi="<?= $realisasi ?>"
                     data-sisa="<?= $sisa ?>">
                     <i class="bi bi-pencil-square"></i> Revisi
@@ -189,7 +194,7 @@
                 <td class="small text-muted">
                   <?= !empty($r['penugasan_mulai']) ? tgl_indo($r['penugasan_mulai']) : '—' ?>
                 </td>
-                <td class="text-end fw-bold text-secondary"><?= rupiah($pagu) ?></td>
+                <td class="text-end fw-bold text-secondary"><?= rupiah($pagu) ?><div class="small text-muted fw-normal">Awal: <?= rupiah((float)($r['pagu_awal'] ?? 0)) ?></div></td>
                 <td class="text-end text-muted"><?= rupiah($realisasi) ?></td>
                 <td class="text-end fw-semibold <?= $sisa < 0 ? 'text-danger' : ($sisa == 0 && $pagu > 0 ? 'text-warning' : 'text-success') ?>">
                   <?= rupiah($sisa) ?>
@@ -203,6 +208,7 @@
                     data-pos-nama="<?= html_escape($r['nama']) ?>"
                     data-pos-tipe="PENDAMPING"
                     data-pagu="<?= $pagu ?>"
+                    data-pagu-awal="<?= (float)($r['pagu_awal'] ?? 0) ?>"
                     data-realisasi="<?= $realisasi ?>"
                     data-sisa="<?= $sisa ?>">
                     <i class="bi bi-pencil-square"></i>
@@ -330,6 +336,11 @@
             <textarea class="form-control" name="alasan" id="revAlasan" rows="2"
                       placeholder="Contoh: Penyesuaian APBD Perubahan, Pergeseran Antar Pos, dll." required></textarea>
           </div>
+          <div class="form-check mt-3 p-3 border rounded bg-warning-subtle">
+            <input class="form-check-input" type="checkbox" name="tandai_pagu_awal" value="1" id="chkPaguAwal">
+            <label class="form-check-label small fw-semibold" for="chkPaguAwal">Jadikan sebagai pagu awal / pertama</label>
+            <div class="form-text">Hanya dapat digunakan satu kali sebelum pos memiliki realisasi. Setelah ditetapkan, perubahan berikutnya dianggap revisi.</div>
+          </div>
         </div>
         <div class="modal-footer bg-light">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -337,6 +348,31 @@
             <i class="bi bi-check-circle me-1"></i>Simpan Revisi
           </button>
         </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Tambah Pos Pendamping -->
+<div class="modal fade" id="modalTambahPosPendamping" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formTambahPosPendamping">
+        <input type="hidden" name="tahun_id" value="<?= $encTahunId ?>">
+        <div class="modal-header bg-light"><h5 class="modal-title fw-bold"><i class="bi bi-person-plus text-primary me-1"></i>Tambah Pos Jabatan Pendamping</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+          <p class="small text-muted">Gunakan ini bila ada jabatan pendamping baru. Pagu awal otomatis Rp 0 dan dapat diisi setelah pos dibuat.</p>
+          <label class="form-label small fw-semibold">Nama Jabatan / Pos</label>
+          <input class="form-control mb-3" name="nama" required placeholder="Contoh: Pendamping Khusus Pimpinan">
+          <label class="form-label small fw-semibold">Kode Pos</label>
+          <input class="form-control mb-3" name="kode" placeholder="Contoh: POS-PEND-KHUSUS">
+          <label class="form-label small fw-semibold">Jenis Anggaran</label>
+          <select class="form-select" name="jenis_anggaran_id">
+            <option value="">-- Belum dipilih --</option>
+            <?php foreach(($jenis_anggaran ?? array()) as $ja): ?><option value="<?= (int)$ja['id'] ?>"><?= html_escape($ja['nama']) ?></option><?php endforeach; ?>
+          </select>
+        </div>
+        <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan</button></div>
       </form>
     </div>
   </div>
@@ -541,6 +577,7 @@ $(function(){
     var btn = $(this);
     currentPagu       = parseFloat(btn.data('pagu')) || 0;
     currentRealisasi  = parseFloat(btn.data('realisasi')) || 0;
+    var paguAwal       = parseFloat(btn.data('pagu-awal')) || 0;
     var sisa          = parseFloat(btn.data('sisa')) || 0;
 
     $('#revPosId').val(btn.data('pos-id'));
@@ -552,6 +589,7 @@ $(function(){
     $('#revPaguBaruVal').val(currentPagu);
     $('#revPaguBaruDisplay').val(currentPagu ? Number(currentPagu).toLocaleString('id-ID') : '').trigger('input');
     $('#revAlasan').val('');
+    $('#chkPaguAwal').prop('checked', false).prop('disabled', paguAwal > 0 || currentPagu > 0 || currentRealisasi > 0);
     hitungRevisi();
     bootstrap.Modal.getOrCreateInstance('#modalRevisiPagu').show();
   });
@@ -636,6 +674,17 @@ $(function(){
     e.preventDefault();
     App.ajax({ url: window.APP.baseUrl + 'pos/terapkan_standar', data: $(this).serialize() })
       .done(function(r){ if(r.status){ bootstrap.Modal.getOrCreateInstance('#modalPaguStandar').hide(); setTimeout(()=>location.reload(), 500); } });
+  });
+
+  $('#formTambahPosPendamping').on('submit', function(e){
+    e.preventDefault();
+    App.ajax({ url: window.APP.baseUrl + 'pos/tambah_pos_pendamping', data: $(this).serialize() })
+      .done(function(r){
+        if(r.status){
+          bootstrap.Modal.getOrCreateInstance('#modalTambahPosPendamping').hide();
+          setTimeout(()=>location.reload(), 500);
+        }
+      });
   });
 });
 </script>

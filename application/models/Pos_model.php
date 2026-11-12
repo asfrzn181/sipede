@@ -32,6 +32,9 @@ class Pos_model extends CI_Model {
                     tipe              ENUM('DPRD','PENDAMPING') NOT NULL,
                     penerima_id       INT UNSIGNED NULL,
                     pagu              DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    pagu_awal         DECIMAL(18,2) NOT NULL DEFAULT 0,
+                    pagu_awal_at      DATETIME NULL,
+                    pagu_awal_oleh    INT UNSIGNED NULL,
                     kelompok_jabatan  ENUM('KETUA','WAKIL_KETUA','ANGGOTA') NULL,
                     urutan            SMALLINT UNSIGNED NOT NULL DEFAULT 0,
                     is_active         TINYINT(1) NOT NULL DEFAULT 1,
@@ -96,6 +99,36 @@ class Pos_model extends CI_Model {
 
         if ($this->db->table_exists('pos_anggaran') && !in_array('jenis_anggaran_id', $this->db->list_fields('pos_anggaran'), true)) {
             $this->db->query('ALTER TABLE pos_anggaran ADD COLUMN jenis_anggaran_id INT UNSIGNED NULL AFTER penerima_id, ADD KEY idx_pos_jenis_anggaran (jenis_anggaran_id)');
+        }
+        if ($this->db->table_exists('pos_anggaran')) {
+            $posFields = $this->db->list_fields('pos_anggaran');
+            if (!in_array('pagu_awal', $posFields, true)) {
+                $this->db->query('ALTER TABLE pos_anggaran ADD COLUMN pagu_awal DECIMAL(18,2) NOT NULL DEFAULT 0 AFTER pagu');
+            }
+            if (!in_array('pagu_awal_at', $posFields, true)) {
+                $this->db->query('ALTER TABLE pos_anggaran ADD COLUMN pagu_awal_at DATETIME NULL AFTER pagu_awal');
+            }
+            if (!in_array('pagu_awal_oleh', $posFields, true)) {
+                $this->db->query('ALTER TABLE pos_anggaran ADD COLUMN pagu_awal_oleh INT UNSIGNED NULL AFTER pagu_awal_at');
+            }
+            // Data lama yang sudah memiliki pagu diperlakukan sebagai pagu awal
+            // karena riwayat sebelum fitur ini belum tersedia.
+            $this->db->query("UPDATE pos_anggaran SET pagu_awal = pagu, pagu_awal_at = COALESCE(pagu_awal_at, updated_at) WHERE pagu > 0 AND pagu_awal = 0");
+        }
+        if (!$this->db->table_exists('riwayat_pagu_pos')) {
+            $this->db->query("CREATE TABLE IF NOT EXISTS riwayat_pagu_pos (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                pos_anggaran_id INT UNSIGNED NOT NULL,
+                jenis_perubahan ENUM('AWAL','STANDAR','REVISI','KOREKSI') NOT NULL,
+                pagu_sebelum DECIMAL(18,2) NOT NULL DEFAULT 0,
+                pagu_sesudah DECIMAL(18,2) NOT NULL DEFAULT 0,
+                realisasi_saat_itu DECIMAL(18,2) NOT NULL DEFAULT 0,
+                ditandai_pagu_awal TINYINT(1) NOT NULL DEFAULT 0,
+                alasan TEXT NULL,
+                dibuat_oleh INT UNSIGNED NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id), KEY idx_riwayat_pagu_pos (pos_anggaran_id), KEY idx_riwayat_pagu_tanggal (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
         }
         if ($this->db->table_exists('kegiatan') && !in_array('jenis_kegiatan_id', $this->db->list_fields('kegiatan'), true)) {
             $this->db->query('ALTER TABLE kegiatan ADD COLUMN jenis_kegiatan_id INT UNSIGNED NULL AFTER nama_kegiatan, ADD COLUMN subjenis_kegiatan VARCHAR(120) NULL AFTER jenis_kegiatan_id, ADD KEY idx_kegiatan_jenis (jenis_kegiatan_id)');
@@ -265,7 +298,10 @@ class Pos_model extends CI_Model {
      * Idempotent – aman dijalankan berulang.
      */
     public function buat_pos_dprd_otomatis(int $tahunId): int {
-        $jenisAnggaran = $this->db->get_where('jenis_anggaran', ['kode' => 'PERJALANAN_DINAS'])->row_array();
+        // Pos bawaan anggota DPRD dimulai dari kelompok Fasilitas DPRD.
+        // Kelompoknya tetap dapat diganti dari menu Pos Anggaran.
+        $jenisAnggaran = $this->db->get_where('jenis_anggaran', ['kode' => 'FASILITAS'])->row_array();
+        if (!$jenisAnggaran) $jenisAnggaran = $this->db->get_where('jenis_anggaran', ['kode' => 'PERJALANAN_DINAS'])->row_array();
         $penerimaList = $this->db
             ->where('tipe', 'DPRD')
             ->where('is_active', 1)
@@ -356,7 +392,7 @@ class Pos_model extends CI_Model {
      * Terapkan pagu standar per kelompok jabatan DPRD untuk satu tahun.
      * Hanya memperbarui pagu yang masih 0.
      */
-    public function terapkan_pagu_standar(int $tahunId, array $standar, bool $overwrite = false): int {
+    public function terapkan_pagu_standar(int $tahunId, array $standar, bool $overwrite = false, ?int $oleh = null): int {
         // $standar = ['KETUA' => 150000000, 'WAKIL_KETUA' => 120000000, 'ANGGOTA' => 80000000]
         $updated = 0;
         $rows = $this->db
@@ -371,8 +407,16 @@ class Pos_model extends CI_Model {
             if ($paguBaru <= 0) continue;
             if (!$overwrite && (float)$row['pagu'] > 0) continue; // Skip jika sudah ada pagu
 
-            $this->db->where('id', (int)$row['id'])
-                     ->update('pos_anggaran', ['pagu' => $paguBaru, 'updated_at' => date('Y-m-d H:i:s')]);
+            $sebelum = (float)$row['pagu'];
+            $isAwal = (float)($row['pagu_awal'] ?? 0) <= 0 && $sebelum <= 0;
+            $update = ['pagu' => $paguBaru, 'updated_at' => date('Y-m-d H:i:s')];
+            if ($isAwal) {
+                $update['pagu_awal'] = $paguBaru;
+                $update['pagu_awal_at'] = date('Y-m-d H:i:s');
+                $update['pagu_awal_oleh'] = $oleh;
+            }
+            $this->db->where('id', (int)$row['id'])->update('pos_anggaran', $update);
+            $this->catat_riwayat_pagu((int)$row['id'], $isAwal ? 'AWAL' : 'STANDAR', $sebelum, $paguBaru, 0, $isAwal, 'Terapkan pagu standar', $oleh);
             $updated++;
         }
         return $updated;
@@ -382,7 +426,7 @@ class Pos_model extends CI_Model {
      * Terapkan satu pagu standar ke seluruh pos PENDAMPING pada satu tahun.
      * Hanya memperbarui pagu yang masih 0 kecuali overwrite diaktifkan.
      */
-    public function terapkan_pagu_pendamping(int $tahunId, float $pagu, bool $overwrite = false): int {
+    public function terapkan_pagu_pendamping(int $tahunId, float $pagu, bool $overwrite = false, ?int $oleh = null): int {
         if ($pagu <= 0) return 0;
 
         $this->db
@@ -398,15 +442,64 @@ class Pos_model extends CI_Model {
         $updated = 0;
 
         foreach ($rows as $row) {
-            $this->db->where('id', (int)$row['id'])
-                     ->update('pos_anggaran', [
-                         'pagu' => $pagu,
-                         'updated_at' => date('Y-m-d H:i:s'),
-                     ]);
+            $sebelum = (float)$row['pagu'];
+            $isAwal = (float)($row['pagu_awal'] ?? 0) <= 0 && $sebelum <= 0;
+            $update = ['pagu' => $pagu, 'updated_at' => date('Y-m-d H:i:s')];
+            if ($isAwal) {
+                $update['pagu_awal'] = $pagu;
+                $update['pagu_awal_at'] = date('Y-m-d H:i:s');
+                $update['pagu_awal_oleh'] = $oleh;
+            }
+            $this->db->where('id', (int)$row['id'])->update('pos_anggaran', $update);
+            $this->catat_riwayat_pagu((int)$row['id'], $isAwal ? 'AWAL' : 'STANDAR', $sebelum, $pagu, 0, $isAwal, 'Terapkan pagu standar pendamping', $oleh);
             $updated++;
         }
 
         return $updated;
+    }
+
+    /**
+     * Menyimpan jejak perubahan pagu agar pagu awal dapat dibedakan dari revisi.
+     */
+    public function catat_riwayat_pagu(int $posId, string $jenis, float $sebelum, float $sesudah, float $realisasi = 0, bool $ditandaiAwal = false, ?string $alasan = null, ?int $oleh = null): int {
+        $this->db->insert('riwayat_pagu_pos', [
+            'pos_anggaran_id' => $posId,
+            'jenis_perubahan' => $jenis,
+            'pagu_sebelum' => $sebelum,
+            'pagu_sesudah' => $sesudah,
+            'realisasi_saat_itu' => $realisasi,
+            'ditandai_pagu_awal' => $ditandaiAwal ? 1 : 0,
+            'alasan' => $alasan,
+            'dibuat_oleh' => $oleh,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        return (int)$this->db->insert_id();
+    }
+
+    public function sudah_memiliki_pagu_awal(int $posId): bool {
+        $row = $this->db->select('pagu_awal')->get_where('pos_anggaran', ['id' => $posId])->row_array();
+        if (!$row) return false;
+        if ((float)$row['pagu_awal'] > 0) return true;
+        return (int)$this->db->where('pos_anggaran_id', $posId)->where('ditandai_pagu_awal', 1)->count_all_results('riwayat_pagu_pos') > 0;
+    }
+
+    public function buat_pos_pendamping_custom(int $tahunId, string $kode, string $nama, ?int $jenisId = null, int $urutan = 99): int {
+        $this->db->insert('pos_anggaran', [
+            'tahun_anggaran_id' => $tahunId,
+            'kode' => $kode,
+            'nama' => $nama,
+            'tipe' => 'PENDAMPING',
+            'penerima_id' => null,
+            'jenis_anggaran_id' => $jenisId ?: null,
+            'pagu' => 0,
+            'pagu_awal' => 0,
+            'kelompok_jabatan' => null,
+            'urutan' => $urutan,
+            'is_active' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+        return (int)$this->db->insert_id();
     }
 
     // ─── Penugasan Pos (hanya PENDAMPING) ───────────────────────────

@@ -28,24 +28,17 @@ class Pengaturan_model extends CI_Model
                     `email` VARCHAR(100) NULL DEFAULT 'setwan@daerah.go.id',
                     `website` VARCHAR(100) NULL DEFAULT 'dprd.daerah.go.id',
                     `kode_pos` VARCHAR(20) NULL DEFAULT '12345',
-                    `logo_path` VARCHAR(255) NULL,
+                    `logo_path` VARCHAR(255) NULL DEFAULT 'https://bangka.go.id/assets/images.png',
                     `kota_penetapan` VARCHAR(100) NOT NULL DEFAULT 'Ibukota',
 
-                    -- Penandatangan 1: Pengguna Anggaran (Sekretaris DPRD)
-                    `pa_label` VARCHAR(100) NOT NULL DEFAULT 'Mengetahui,\nPengguna Anggaran',
-                    `pa_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Sekretaris DPRD',
-                    `pa_nama` VARCHAR(150) NOT NULL DEFAULT 'Drs. H. AHMAD FAUZI, M.Si',
-                    `pa_nip` VARCHAR(50) NOT NULL DEFAULT '19750812 199803 1 002',
-                    `pa_pangkat` VARCHAR(100) NULL DEFAULT 'Pembina Utama Muda (IV/c)',
-
-                    -- Penandatangan 2: PPTK
+                    -- Penandatangan 1: PPTK
                     `pptk_label` VARCHAR(100) NOT NULL DEFAULT 'Pejabat Pelaksana Teknis Kegiatan',
                     `pptk_jabatan` VARCHAR(150) NOT NULL DEFAULT 'PPTK Perjalanan Dinas',
                     `pptk_nama` VARCHAR(150) NOT NULL DEFAULT 'BAMBANG SUSANTO, S.E., M.M.',
                     `pptk_nip` VARCHAR(50) NOT NULL DEFAULT '19820415 200501 1 008',
                     `pptk_pangkat` VARCHAR(100) NULL DEFAULT 'Penata Tk. I (III/d)',
 
-                    -- Penandatangan 3: Bendahara Pengeluaran
+                    -- Penandatangan 2: Bendahara Pengeluaran
                     `bendahara_label` VARCHAR(100) NOT NULL DEFAULT 'Bendahara Pengeluaran',
                     `bendahara_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Bendahara Pengeluaran',
                     `bendahara_nama` VARCHAR(150) NOT NULL DEFAULT 'SITI NURHALIZA, S.Ak.',
@@ -72,14 +65,8 @@ class Pengaturan_model extends CI_Model
                 'email'             => 'setwan@daerah.go.id',
                 'website'           => 'dprd.daerah.go.id',
                 'kode_pos'          => '12345',
-                'logo_path'         => 'assets/img/logo_default.svg',
+                'logo_path'         => (string)(config_item('logo_url') ?: 'https://bangka.go.id/assets/images.png'),
                 'kota_penetapan'    => 'Ibukota',
-
-                'pa_label'          => "Mengetahui,\nPengguna Anggaran",
-                'pa_jabatan'        => 'Sekretaris DPRD',
-                'pa_nama'           => 'Drs. H. AHMAD FAUZI, M.Si',
-                'pa_nip'            => '19750812 199803 1 002',
-                'pa_pangkat'        => 'Pembina Utama Muda (IV/c)',
 
                 'pptk_label'        => 'Pejabat Pelaksana Teknis Kegiatan',
                 'pptk_jabatan'      => 'PPTK Perjalanan Dinas',
@@ -107,10 +94,8 @@ class Pengaturan_model extends CI_Model
             $row = $this->db->get_where($this->table, array('id' => 1))->row_array() ?: array();
         }
 
-        // Fallback logo jika belum diset atau berkas tidak ditemukan
-        if (empty($row['logo_path']) || (!file_exists(FCPATH . $row['logo_path']) && !file_exists($row['logo_path']))) {
-            $row['logo_path'] = 'assets/img/logo_default.svg';
-        }
+        // Logo dokumen selalu sama dengan logo aplikasi.
+        $row['logo_path'] = (string)(config_item('logo_url') ?: 'https://bangka.go.id/assets/images.png');
 
         return $row;
     }

@@ -111,8 +111,8 @@ class Pos extends MY_Controller
             $this->respond(false, 'Tahun tidak ditemukan atau sudah dikunci.', [], [], 422);
         }
 
-        $n = $this->Pos_model->terapkan_pagu_standar($tahunId, $standar, $overwrite);
-        $nPendamping = $this->Pos_model->terapkan_pagu_pendamping($tahunId, $paguPendamping, $overwrite);
+        $n = $this->Pos_model->terapkan_pagu_standar($tahunId, $standar, $overwrite, (int)$this->user['id']);
+        $nPendamping = $this->Pos_model->terapkan_pagu_pendamping($tahunId, $paguPendamping, $overwrite, (int)$this->user['id']);
 
         $this->Audit_model->write('POS_ANGGARAN', $tahunId, 'TERAPKAN_STANDAR',
             [], array_merge($standar, [
@@ -134,6 +134,7 @@ class Pos extends MY_Controller
         $posId   = decrypt_id($this->input->post('pos_id'));
         $paguBaru = clean_number($this->input->post('pagu_baru'));
         $alasan  = trim((string)$this->input->post('alasan', true));
+        $tandaiPaguAwal = (bool)$this->input->post('tandai_pagu_awal');
 
         if (!$posId) $this->respond(false, 'ID Pos tidak valid.', [], [], 422);
         if (empty($alasan)) $this->respond(false, 'Alasan revisi wajib diisi.', [], ['alasan' => 'Wajib diisi.'], 422);
@@ -152,6 +153,21 @@ class Pos extends MY_Controller
         $saldo = $this->Pos_model->saldo_pos($posId);
         $realisasi = (float)($saldo['realisasi'] ?? 0);
         $paguLama  = (float)$pos['pagu'];
+        $sudahAdaPaguAwal = $this->Pos_model->sudah_memiliki_pagu_awal($posId);
+
+        // Pagu awal hanya boleh ditetapkan satu kali, sebelum ada realisasi.
+        if ($tandaiPaguAwal && $sudahAdaPaguAwal) {
+            $this->respond(false, 'Pagu awal sudah pernah ditetapkan. Perubahan berikutnya dicatat sebagai revisi.', [], [], 422);
+        }
+        if ($tandaiPaguAwal && $realisasi > 0) {
+            $this->respond(false, 'Pagu awal tidak dapat ditetapkan setelah ada realisasi.', [], [], 422);
+        }
+        if ($tandaiPaguAwal && $paguBaru <= 0) {
+            $this->respond(false, 'Pagu awal harus lebih besar dari nol.', [], [], 422);
+        }
+        if (!$tandaiPaguAwal && !$sudahAdaPaguAwal && $paguLama <= 0 && $paguBaru > 0) {
+            $this->respond(false, 'Tandai sebagai pagu awal/pertama untuk pengisian pagu pertama.', [], ['tandai_pagu_awal' => 'Wajib dicentang saat pagu pertama diisi.'], 422);
+        }
 
         if ($paguBaru < $realisasi) {
             $this->respond(false,
@@ -164,14 +180,33 @@ class Pos extends MY_Controller
         }
 
         $this->db->trans_begin();
-        $this->Pos_model->update_pagu($posId, $paguBaru);
+        $updatePagu = [
+            'pagu' => $paguBaru,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        if ($tandaiPaguAwal) {
+            $updatePagu['pagu_awal'] = $paguBaru;
+            $updatePagu['pagu_awal_at'] = date('Y-m-d H:i:s');
+            $updatePagu['pagu_awal_oleh'] = (int)$this->user['id'];
+        }
+        $this->db->where('id', $posId)->update('pos_anggaran', $updatePagu);
+        $this->Pos_model->catat_riwayat_pagu(
+            $posId,
+            $tandaiPaguAwal ? 'AWAL' : 'REVISI',
+            $paguLama,
+            $paguBaru,
+            $realisasi,
+            $tandaiPaguAwal,
+            $alasan,
+            (int)$this->user['id']
+        );
 
         $selisih  = $paguBaru - $paguLama;
         $sisaBaru = $paguBaru - $realisasi;
 
         $this->Audit_model->write('POS_ANGGARAN', $posId, 'REVISI_PAGU',
             ['pagu_lama' => $paguLama, 'realisasi' => $realisasi, 'sisa_lama' => $paguLama - $realisasi],
-            ['pagu_baru' => $paguBaru, 'selisih' => $selisih, 'sisa_baru' => $sisaBaru, 'alasan' => $alasan],
+            ['pagu_baru' => $paguBaru, 'selisih' => $selisih, 'sisa_baru' => $sisaBaru, 'pagu_awal' => $tandaiPaguAwal, 'alasan' => $alasan],
             (int)$this->user['id']);
 
         if ($this->db->trans_status() === false) {
@@ -181,11 +216,35 @@ class Pos extends MY_Controller
         $this->db->trans_commit();
 
         $tipe = $selisih > 0 ? 'Penambahan' : 'Pengurangan';
-        $this->respond(true, "Revisi pagu berhasil! ({$tipe} " . rupiah(abs($selisih)) . '). Dicatat di Audit Log.', [
+        $this->respond(true, ($tandaiPaguAwal ? 'Pagu awal berhasil ditetapkan. ' : "Revisi pagu berhasil! ({$tipe} " . rupiah(abs($selisih)) . '). ') . 'Dicatat di Audit Log.', [
             'pagu_baru' => $paguBaru,
             'selisih'   => $selisih,
             'sisa_baru' => $sisaBaru,
         ]);
+    }
+
+    public function tambah_pos_pendamping(): void {
+        $this->require_permission('anggaran.manage');
+        $tahunId = decrypt_id($this->input->post('tahun_id'));
+        $kode = strtoupper(trim((string)$this->input->post('kode', true)));
+        $kode = preg_replace('/[^A-Z0-9_-]+/', '_', $kode);
+        $nama = trim((string)$this->input->post('nama', true));
+        $jenisId = (int)$this->input->post('jenis_anggaran_id');
+
+        if (!$tahunId || !$nama) $this->respond(false, 'Tahun dan nama jabatan pendamping wajib diisi.', [], [], 422);
+        if ($kode === '') $kode = 'POS-PEND-' . strtoupper(substr(sha1($nama . microtime(true)), 0, 8));
+        $tahun = $this->Tahun_model->find($tahunId);
+        if (!$tahun || !empty($tahun['is_locked'])) $this->respond(false, 'Tahun tidak ditemukan atau sudah dikunci.', [], [], 422);
+        if ($this->db->where(['tahun_anggaran_id' => $tahunId, 'kode' => $kode])->count_all_results('pos_anggaran')) {
+            $this->respond(false, 'Kode pos sudah digunakan pada tahun ini.', [], [], 422);
+        }
+        if ($jenisId && !$this->db->get_where('jenis_anggaran', ['id' => $jenisId, 'is_active' => 1])->row_array()) {
+            $this->respond(false, 'Jenis anggaran tidak ditemukan.', [], [], 422);
+        }
+
+        $posId = $this->Pos_model->buat_pos_pendamping_custom($tahunId, $kode, $nama, $jenisId ?: null);
+        $this->Audit_model->write('POS_ANGGARAN', $posId, 'BUAT_POS_PENDAMPING', [], ['kode' => $kode, 'nama' => $nama, 'jenis_anggaran_id' => $jenisId], (int)$this->user['id']);
+        $this->respond(true, 'Pos jabatan pendamping berhasil ditambahkan. Pagu awal masih Rp 0 dan dapat diisi melalui Terapkan Pagu Standar atau Edit.', ['id' => encrypt_id($posId)]);
     }
 
     public function set_jenis_anggaran(): void {

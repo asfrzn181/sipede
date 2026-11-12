@@ -225,7 +225,6 @@ ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `keterangan` = VALUES(`keterang
 INSERT INTO `pengaturan_dokumen` (
   `id`, `nama_pemda`, `nama_lembaga`, `nama_skpd`, `alamat`, 
   `telepon`, `fax`, `email`, `website`, `kode_pos`, `logo_path`, `kota_penetapan`,
-  `pa_label`, `pa_jabatan`, `pa_nama`, `pa_nip`, `pa_pangkat`,
   `pptk_label`, `pptk_jabatan`, `pptk_nama`, `pptk_nip`, `pptk_pangkat`,
   `bendahara_label`, `bendahara_jabatan`, `bendahara_nama`, `bendahara_nip`, `bendahara_pangkat`
 ) VALUES (
@@ -239,13 +238,8 @@ INSERT INTO `pengaturan_dokumen` (
   'setwan@daerah.go.id',
   'dprd.daerah.go.id',
   '12345',
-  'assets/img/logo_default.svg',
+  'https://bangka.go.id/assets/images.png',
   'Ibukota',
-  'Mengetahui,\nPengguna Anggaran',
-  'Sekretaris DPRD',
-  'Drs. H. AHMAD FAUZI, M.Si',
-  '19750812 199803 1 002',
-  'Pembina Utama Muda (IV/c)',
   'Pejabat Pelaksana Teknis Kegiatan',
   'PPTK Perjalanan Dinas',
   'BAMBANG SUSANTO, S.E., M.M.',

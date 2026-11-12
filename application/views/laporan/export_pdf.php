@@ -23,6 +23,26 @@
       padding-bottom: 8px;
       margin-bottom: 15px;
     }
+    .kop-header {
+      display: table;
+      width: 100%;
+    }
+    .kop-logo-cell {
+      display: table-cell;
+      width: 72px;
+      vertical-align: middle;
+      text-align: left;
+    }
+    .kop-logo {
+      width: 62px;
+      height: 62px;
+      object-fit: contain;
+    }
+    .kop-text {
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center;
+    }
     .kop h4 {
       font-size: 11pt;
       font-weight: bold;
@@ -86,7 +106,7 @@
       page-break-inside: avoid;
     }
     .ttd-table td {
-      width: 33.33%;
+      width: 50%;
       text-align: center;
       vertical-align: top;
       font-size: 8.5pt;
@@ -101,21 +121,28 @@
 
   <!-- KOP SURAT RESMI -->
   <div class="kop">
-    <h4><?= html_escape($setting['nama_pemda'] ?? 'PEMERINTAH DAERAH') ?></h4>
-    <h3><?= html_escape($setting['nama_skpd'] ?? 'SEKRETARIAT DPRD') ?></h3>
-    <p>
-      <?= html_escape($setting['alamat'] ?? '') ?>
-      <?php if (!empty($setting['kode_pos'])): ?> &bull; Kode Pos: <?= html_escape($setting['kode_pos']) ?><?php endif; ?>
-      <br>
-      <?php
-        $parts = array();
-        if (!empty($setting['telepon'])) $parts[] = 'Telp: ' . html_escape($setting['telepon']);
-        if (!empty($setting['fax']))     $parts[] = 'Fax: ' . html_escape($setting['fax']);
-        if (!empty($setting['email']))   $parts[] = 'Email: ' . html_escape($setting['email']);
-        if (!empty($setting['website'])) $parts[] = 'Website: ' . html_escape($setting['website']);
-        echo implode(' &bull; ', $parts);
-      ?>
-    </p>
+    <div class="kop-header">
+      <div class="kop-logo-cell">
+        <img class="kop-logo" src="<?= html_escape($setting['logo_path'] ?? config_item('logo_url')) ?>" alt="Logo Sekretariat DPRD Kabupaten Bangka">
+      </div>
+      <div class="kop-text">
+        <h4><?= html_escape($setting['nama_pemda'] ?? 'PEMERINTAH DAERAH') ?></h4>
+        <h3><?= html_escape($setting['nama_skpd'] ?? 'SEKRETARIAT DPRD') ?></h3>
+        <p>
+          <?= html_escape($setting['alamat'] ?? '') ?>
+          <?php if (!empty($setting['kode_pos'])): ?> &bull; Kode Pos: <?= html_escape($setting['kode_pos']) ?><?php endif; ?>
+          <br>
+          <?php
+            $parts = array();
+            if (!empty($setting['telepon'])) $parts[] = 'Telp: ' . html_escape($setting['telepon']);
+            if (!empty($setting['fax']))     $parts[] = 'Fax: ' . html_escape($setting['fax']);
+            if (!empty($setting['email']))   $parts[] = 'Email: ' . html_escape($setting['email']);
+            if (!empty($setting['website'])) $parts[] = 'Website: ' . html_escape($setting['website']);
+            echo implode(' &bull; ', $parts);
+          ?>
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- JUDUL DOKUMEN -->
@@ -178,19 +205,9 @@
     </tfoot>
   </table>
 
-  <!-- TANDA TANGAN 3 PEJABAT -->
+  <!-- TANDA TANGAN 2 PEJABAT -->
   <table class="ttd-table">
     <tr>
-      <td>
-        <?= nl2br(html_escape($setting['pa_label'])) ?><br>
-        <strong><?= html_escape($setting['pa_jabatan']) ?></strong>
-        <div class="ttd-space"></div>
-        <strong style="text-decoration: underline; display: block;"><?= html_escape($setting['pa_nama']) ?></strong>
-        <?php if (!empty($setting['pa_pangkat'])): ?>
-          <div><?= html_escape($setting['pa_pangkat']) ?></div>
-        <?php endif; ?>
-        <span>NIP. <?= html_escape($setting['pa_nip']) ?></span>
-      </td>
       <td>
         <?= nl2br(html_escape($setting['pptk_label'])) ?><br>
         <strong><?= html_escape($setting['pptk_jabatan']) ?></strong>

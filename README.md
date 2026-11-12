@@ -11,7 +11,7 @@ Aplikasi berbasis **CodeIgniter 3 + PHP 8.2** dengan arsitektur **Pos Anggaran**
   - Pendamping: Pagu melekat pada 8 pos jabatan baku (dapat dialihkan dengan alasan jika berhalangan).
 - **Pengaturan KOP Dokumen & Penandatangan**:
   - Upload logo daerah (SVG, PNG, JPG).
-  - Tanda tangan dinamis 3 pejabat: Pengguna Anggaran (Sekretaris DPRD), PPTK, dan Bendahara Pengeluaran.
+  - Tanda tangan dinamis 2 pejabat: PPTK dan Bendahara Pengeluaran.
   - Interactive Live Preview (pratinjau lembar kertas A4 sebelum cetak).
 - **Workflow Verifikasi Lengkap**:
   - DRAFT &rarr; DIAJUKAN &rarr; DIVERIFIKASI / AKTIF &rarr; BATAL.

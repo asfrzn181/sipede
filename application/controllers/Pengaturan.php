@@ -54,21 +54,14 @@ class Pengaturan extends MY_Controller
             'kode_pos'          => trim((string)$this->input->post('kode_pos', TRUE)),
             'kota_penetapan'    => trim((string)$this->input->post('kota_penetapan', TRUE)) ?: 'Kota',
 
-            // Pejabat 1: PA
-            'pa_label'          => trim((string)$this->input->post('pa_label', TRUE)),
-            'pa_jabatan'        => trim((string)$this->input->post('pa_jabatan', TRUE)),
-            'pa_nama'           => trim((string)$this->input->post('pa_nama', TRUE)),
-            'pa_nip'            => trim((string)$this->input->post('pa_nip', TRUE)),
-            'pa_pangkat'        => trim((string)$this->input->post('pa_pangkat', TRUE)),
-
-            // Pejabat 2: PPTK
+            // Penandatangan 1: PPTK
             'pptk_label'        => trim((string)$this->input->post('pptk_label', TRUE)),
             'pptk_jabatan'      => trim((string)$this->input->post('pptk_jabatan', TRUE)),
             'pptk_nama'         => trim((string)$this->input->post('pptk_nama', TRUE)),
             'pptk_nip'          => trim((string)$this->input->post('pptk_nip', TRUE)),
             'pptk_pangkat'      => trim((string)$this->input->post('pptk_pangkat', TRUE)),
 
-            // Pejabat 3: Bendahara Pengeluaran
+            // Penandatangan 2: Bendahara Pengeluaran
             'bendahara_label'   => trim((string)$this->input->post('bendahara_label', TRUE)),
             'bendahara_jabatan' => trim((string)$this->input->post('bendahara_jabatan', TRUE)),
             'bendahara_nama'    => trim((string)$this->input->post('bendahara_nama', TRUE)),
@@ -80,30 +73,6 @@ class Pengaturan extends MY_Controller
             $this->respond(FALSE, 'Nama Perangkat Daerah (SKPD) wajib diisi.', array(), array('nama_skpd' => 'Wajib diisi.'), 422);
         }
 
-        // Handle upload logo jika ada file yang dikirim
-        if (!empty($_FILES['logo']['name'])) {
-            $uploadDir = FCPATH . 'uploads/logo/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            $config = array(
-                'upload_path'   => $uploadDir,
-                'allowed_types' => 'png|jpg|jpeg|svg|webp',
-                'max_size'      => 3072, // 3MB
-                'file_name'     => 'logo_pemda_' . time()
-            );
-
-            $this->load->library('upload', $config);
-            if ($this->upload->do_upload('logo')) {
-                $uploadData = $this->upload->data();
-                $data['logo_path'] = 'uploads/logo/' . $uploadData['file_name'];
-            } else {
-                $err = $this->upload->display_errors('', '');
-                $this->respond(FALSE, 'Gagal mengunggah logo: ' . $err, array(), array('logo' => $err), 422);
-            }
-        }
-
         $this->Pengaturan_model->save($data);
         $this->Audit_model->write('PENGATURAN_DOKUMEN', 1, 'UPDATE', $current, $data, (int)($this->user['id'] ?? 0));
 
@@ -111,7 +80,7 @@ class Pengaturan extends MY_Controller
 
         $this->respond(TRUE, 'Pengaturan KOP Dokumen dan Penandatangan berhasil disimpan.', array(
             'setting' => $updatedSetting,
-            'logoUrl' => base_url($updatedSetting['logo_path'])
+            'logoUrl' => $updatedSetting['logo_path']
         ));
     }
 }

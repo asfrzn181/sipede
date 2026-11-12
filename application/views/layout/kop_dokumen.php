@@ -5,7 +5,7 @@
     $setting = $CI->Pengaturan_model->get();
   }
 
-  $logoUrl = base_url($setting['logo_path'] ?? 'assets/img/logo_default.svg');
+  $logoUrl = $setting['logo_path'] ?? config_item('logo_url');
   $showLogo = $show_logo ?? true;
 ?>
 

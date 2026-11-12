@@ -136,6 +136,7 @@ CREATE TABLE `jenis_anggaran` (
 -- 4. Pos Anggaran & Penugasan Pos
 -- (Konsep baru: pagu DPRD melekat per orang, pagu Pendamping melekat per pos jabatan)
 -- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `riwayat_pagu_pos`;
 DROP TABLE IF EXISTS `penugasan_pos`;
 DROP TABLE IF EXISTS `pos_anggaran`;
 
@@ -148,6 +149,9 @@ CREATE TABLE `pos_anggaran` (
   `penerima_id` INT UNSIGNED NULL, -- Melekat tetap pada anggota DPRD
   `jenis_anggaran_id` INT UNSIGNED NULL,
   `pagu` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  `pagu_awal` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  `pagu_awal_at` DATETIME NULL,
+  `pagu_awal_oleh` INT UNSIGNED NULL,
   `kelompok_jabatan` ENUM('KETUA','WAKIL_KETUA','ANGGOTA') NULL,
   `urutan` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -178,6 +182,22 @@ CREATE TABLE `penugasan_pos` (
   INDEX `idx_penugasan_aktif` (`pos_anggaran_id`, `tanggal_selesai`),
   CONSTRAINT `fk_penugasan_pos` FOREIGN KEY (`pos_anggaran_id`) REFERENCES `pos_anggaran` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_penugasan_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `riwayat_pagu_pos` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pos_anggaran_id` INT UNSIGNED NOT NULL,
+  `jenis_perubahan` ENUM('AWAL','STANDAR','REVISI','KOREKSI') NOT NULL,
+  `pagu_sebelum` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  `pagu_sesudah` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  `realisasi_saat_itu` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  `ditandai_pagu_awal` TINYINT(1) NOT NULL DEFAULT 0,
+  `alasan` TEXT NULL,
+  `dibuat_oleh` INT UNSIGNED NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_riwayat_pagu_pos` (`pos_anggaran_id`),
+  KEY `idx_riwayat_pagu_tanggal` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
@@ -373,24 +393,17 @@ CREATE TABLE `pengaturan_dokumen` (
   `email` VARCHAR(100) NULL DEFAULT 'setwan@daerah.go.id',
   `website` VARCHAR(100) NULL DEFAULT 'dprd.daerah.go.id',
   `kode_pos` VARCHAR(20) NULL DEFAULT '12345',
-  `logo_path` VARCHAR(255) NULL,
+  `logo_path` VARCHAR(255) NULL DEFAULT 'https://bangka.go.id/assets/images.png',
   `kota_penetapan` VARCHAR(100) NOT NULL DEFAULT 'Ibukota',
 
-  -- Penandatangan 1: Pengguna Anggaran (Sekretaris DPRD)
-  `pa_label` VARCHAR(100) NOT NULL DEFAULT 'Mengetahui,\nPengguna Anggaran',
-  `pa_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Sekretaris DPRD',
-  `pa_nama` VARCHAR(150) NOT NULL DEFAULT 'Drs. H. AHMAD FAUZI, M.Si',
-  `pa_nip` VARCHAR(50) NOT NULL DEFAULT '19750812 199803 1 002',
-  `pa_pangkat` VARCHAR(100) NULL DEFAULT 'Pembina Utama Muda (IV/c)',
-
-  -- Penandatangan 2: PPTK
+  -- Penandatangan 1: PPTK
   `pptk_label` VARCHAR(100) NOT NULL DEFAULT 'Pejabat Pelaksana Teknis Kegiatan',
   `pptk_jabatan` VARCHAR(150) NOT NULL DEFAULT 'PPTK Perjalanan Dinas',
   `pptk_nama` VARCHAR(150) NOT NULL DEFAULT 'BAMBANG SUSANTO, S.E., M.M.',
   `pptk_nip` VARCHAR(50) NOT NULL DEFAULT '19820415 200501 1 008',
   `pptk_pangkat` VARCHAR(100) NULL DEFAULT 'Penata Tk. I (III/d)',
 
-  -- Penandatangan 3: Bendahara Pengeluaran
+  -- Penandatangan 2: Bendahara Pengeluaran
   `bendahara_label` VARCHAR(100) NOT NULL DEFAULT 'Bendahara Pengeluaran',
   `bendahara_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Bendahara Pengeluaran',
   `bendahara_nama` VARCHAR(150) NOT NULL DEFAULT 'SITI NURHALIZA, S.Ak.',
