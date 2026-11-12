@@ -9,6 +9,20 @@
     RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 </IfModule>
 
+# Jangan gunakan page cache LiteSpeed untuk aplikasi bersession.
+<IfModule LiteSpeed>
+    CacheDisable public /
+</IfModule>
+
+<IfModule mod_headers.c>
+    <IfModule LiteSpeed>
+        Header always set X-LiteSpeed-Cache-Control "no-cache"
+    </IfModule>
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+</IfModule>
+
 # Aplikasi internal: jangan indeks oleh mesin pencari.
 <IfModule mod_headers.c>
     Header always set X-Robots-Tag "noindex, nofollow, noarchive"

@@ -34,7 +34,12 @@
       </div>
       <div class="mb-4">
         <label class="form-label" for="password">Password</label>
-        <input id="password" type="password" class="form-control form-control-lg" name="password" required autocomplete="current-password">
+        <div class="input-group input-group-lg">
+          <input id="password" type="password" class="form-control" name="password" required autocomplete="current-password">
+          <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Tampilkan password" title="Tampilkan password">
+            <svg id="passwordEye" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
       </div>
       <button class="btn btn-primary btn-lg w-100" type="submit">Masuk</button>
     </form>
@@ -43,7 +48,17 @@
   (function () {
     var form = document.getElementById('loginForm');
     var errorBox = document.getElementById('loginError');
+    var password = document.getElementById('password');
+    var togglePassword = document.getElementById('togglePassword');
     if (!form) return;
+    if (togglePassword && password) {
+      togglePassword.addEventListener('click', function () {
+        var visible = password.type === 'text';
+        password.type = visible ? 'password' : 'text';
+        togglePassword.setAttribute('aria-label', visible ? 'Tampilkan password' : 'Sembunyikan password');
+        togglePassword.setAttribute('title', visible ? 'Tampilkan password' : 'Sembunyikan password');
+      });
+    }
     form.addEventListener('submit', function (event) {
       event.preventDefault();
       var button = form.querySelector('button[type="submit"]');
@@ -63,7 +78,7 @@
       }).then(function (result) {
         var data = result.data || {};
         if (data.status && data.data && data.data.redirect) {
-          window.location.href = data.data.redirect;
+          window.location.replace(data.data.redirect);
           return;
         }
         throw new Error(data.message || 'Username atau password salah.');

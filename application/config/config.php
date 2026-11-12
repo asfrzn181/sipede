@@ -8,10 +8,13 @@ $scheme = $forwardedProto !== ''
     : ((!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') ? 'https' : 'http');
 $scheme = in_array($scheme, array('http', 'https'), true) ? $scheme : 'http';
 
+$directHost = trim((string)($_SERVER['HTTP_HOST'] ?? ''));
 $forwardedHost = trim((string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
-$host = $forwardedHost !== ''
-    ? trim(explode(',', $forwardedHost)[0])
-    : trim((string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost'));
+// Di cPanel/LiteSpeed, HTTP_HOST adalah host publik yang harus dipakai
+// untuk cookie dan redirect. Header forwarded dapat berisi host internal.
+$host = $directHost !== ''
+    ? $directHost
+    : ($forwardedHost !== '' ? trim(explode(',', $forwardedHost)[0]) : trim((string)($_SERVER['SERVER_NAME'] ?? 'localhost')));
 $host = preg_replace('/[^a-zA-Z0-9.:\-\[\]]/', '', $host);
 
 $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
@@ -41,7 +44,11 @@ $config['csrf_expire'] = 7200;
 $config['csrf_regenerate'] = FALSE;
 $config['cookie_path'] = '/';
 $config['cookie_domain'] = '';
-$config['cookie_secure'] = (getenv('APP_COOKIE_SECURE') ?: '0') === '1';
+$cookieSecureEnv = getenv('APP_COOKIE_SECURE');
+$config['cookie_secure'] = $cookieSecureEnv !== false
+    ? (string)$cookieSecureEnv === '1'
+    : $scheme === 'https';
+$config['cookie_samesite'] = 'Lax';
 $config['cookie_httponly'] = FALSE;
 $config['csrf_exclude_uris'] = array('auth/login');
 $config['global_xss_filtering'] = TRUE;

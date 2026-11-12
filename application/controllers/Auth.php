@@ -40,7 +40,11 @@ class Auth extends MY_Controller
         if (!empty($user['wajib_ganti_password'])) {
             $this->session->set_flashdata('info', 'Anda menggunakan password default. Anda dapat menggantinya melalui menu Profil.');
         }
-        if($this->input->is_ajax_request())$this->respond(TRUE,'Selamat datang.',array('redirect'=>site_url($target)));
+        if($this->input->is_ajax_request()) {
+            // Pastikan session database selesai ditulis sebelum browser berpindah halaman.
+            session_write_close();
+            $this->respond(TRUE,'Selamat datang.',array('redirect'=>site_url($target)));
+        }
         session_write_close();
         redirect($target, 'location', 302);
     }
