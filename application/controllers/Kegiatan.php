@@ -161,12 +161,14 @@ class Kegiatan extends MY_Controller
             $this->deny();
         }
 
-        $year = (int)$kegiatan['tahun_anggaran_id'];
-        $this->Pos_model->buat_pos_dprd_otomatis($year);
-        $this->Pos_model->buat_pos_pendamping_baku($year);
+        $tahunAnggaranId = (int)$kegiatan['tahun_anggaran_id'];
+        $tahunRow = $this->db->get_where('tahun_anggaran', array('id' => $tahunAnggaranId))->row_array();
+        $tahun = (int)($tahunRow['tahun'] ?? 0);
+        $this->Pos_model->buat_pos_dprd_otomatis($tahunAnggaranId);
+        $this->Pos_model->buat_pos_pendamping_baku($tahunAnggaranId);
 
-        $posAnggaran = $this->Pos_model->all_by_tahun($year);
-        $saldoList = $this->Pos_model->saldo_by_tahun($year);
+        $posAnggaran = $this->Pos_model->all_by_tahun($tahunAnggaranId);
+        $saldoList = $this->Pos_model->saldo_by_tahun($tahunAnggaranId);
         $saldoMap  = array_column($saldoList, null, 'pos_anggaran_id');
 
         foreach ($posAnggaran as &$pos) {
@@ -181,7 +183,7 @@ class Kegiatan extends MY_Controller
             'view'  => 'kegiatan/rincian',
             'data'  => array(
                 'kegiatan'       => $kegiatan,
-                'penerima'       => $this->Penerima_model->all_active(),
+                'penerima'       => $this->Penerima_model->all_active($tahun),
                 'sumber_dana'    => $this->Sumber_dana_model->all(),
                 'jenis_kegiatan' => $this->db->where('is_active', 1)->order_by('urutan')->get('jenis_kegiatan')->result_array(),
                 'jenis_biaya'    => $this->Jenis_biaya_model->all(),
@@ -336,6 +338,7 @@ class Kegiatan extends MY_Controller
         if ($tahunRow && !empty($tahunRow['is_locked'])) {
             $this->respond(FALSE, 'Tahun anggaran telah dikunci.', array(), array(), 422);
         }
+        $tahunKalender = (int)($tahunRow['tahun'] ?? 0);
 
         // Cek duplikasi peserta dalam satu kegiatan
         $existing = $this->db->get_where('kegiatan_peserta', array('kegiatan_id' => $kegiatanId, 'penerima_id' => $penerimaId))->row_array();
@@ -346,6 +349,9 @@ class Kegiatan extends MY_Controller
         $penerima = $this->Penerima_model->find($penerimaId);
         if (!$penerima) {
             $this->respond(FALSE, 'Data penerima tidak ditemukan.', array(), array(), 404);
+        }
+        if (!$this->Penerima_model->berlaku_pada_tahun($penerima, $tahunKalender)) {
+            $this->respond(FALSE, 'Anggota DPRD tidak berada dalam periode jabatan pada tahun kegiatan.', array(), array('penerima_id' => 'Periode jabatan tidak sesuai tahun kegiatan.'), 422);
         }
 
         // Semua peserta memiliki anggaran bawaan, tetapi sumber anggaran dapat

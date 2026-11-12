@@ -46,7 +46,9 @@ class Tahun_model extends CI_Model {
 
     /** Pagu anggaran per penerima untuk satu tahun, dilengkapi data realisasi dan sisa */
     public function pagu_by_tahun(int $tahun_id): array {
-        return $this->db
+        $tahunRow = $this->db->get_where('tahun_anggaran', array('id' => $tahun_id))->row_array();
+        $tahun = (int)($tahunRow['tahun'] ?? 0);
+        $this->db
             ->select("a.id anggaran_id,
                 COALESCE(
                     (SELECT pa.pagu
@@ -91,9 +93,22 @@ class Tahun_model extends CI_Model {
             ->from('penerima p')
             ->join('anggaran a', 'a.penerima_id = p.id AND a.tahun_anggaran_id = ' . (int)$tahun_id, 'left')
             ->join('v_realisasi r', 'r.tahun_anggaran_id = ' . (int)$tahun_id . ' AND r.penerima_id = p.id', 'left')
-            ->where('p.is_active', 1)
-            ->order_by('p.tipe')
-            ->order_by('p.nama')
-            ->get()->result_array();
+            ->where('p.is_active', 1);
+        if ($tahun) {
+            $this->db->group_start();
+            $this->db->where('p.tipe !=', 'DPRD');
+            $this->db->or_group_start();
+            $this->db->group_start();
+            $this->db->where('p.periode_mulai IS NULL', null, false);
+            $this->db->or_where('p.periode_mulai <=', $tahun);
+            $this->db->group_end();
+            $this->db->group_start();
+            $this->db->where('p.periode_akhir IS NULL', null, false);
+            $this->db->or_where('p.periode_akhir >=', $tahun);
+            $this->db->group_end();
+            $this->db->group_end();
+            $this->db->group_end();
+        }
+        return $this->db->order_by('p.tipe')->order_by('p.nama')->get()->result_array();
     }
 }

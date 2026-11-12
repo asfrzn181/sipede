@@ -446,6 +446,8 @@ SELECT
   pa.pagu - COALESCE(r.realisasi, 0) AS sisa
 FROM `pos_anggaran` pa
 LEFT JOIN `jenis_anggaran` ja ON ja.id = pa.jenis_anggaran_id
+LEFT JOIN `tahun_anggaran` tahun_pos ON tahun_pos.id = pa.tahun_anggaran_id
+LEFT JOIN `penerima` periode_penerima ON periode_penerima.id = pa.penerima_id AND pa.tipe = 'DPRD'
 LEFT JOIN (
   SELECT x.pos_anggaran_id, SUM(x.nilai) AS realisasi
   FROM (
@@ -461,7 +463,10 @@ LEFT JOIN (
     WHERE kp.pos_anggaran_id IS NOT NULL
   ) x
   GROUP BY x.pos_anggaran_id
-) r ON r.pos_anggaran_id = pa.id;
+  ) r ON r.pos_anggaran_id = pa.id
+WHERE pa.tipe != 'DPRD'
+   OR ((periode_penerima.periode_mulai IS NULL OR periode_penerima.periode_mulai <= tahun_pos.tahun)
+   AND (periode_penerima.periode_akhir IS NULL OR periode_penerima.periode_akhir >= tahun_pos.tahun));
 
 -- View 3: Sisa Anggaran Konvensional (Legacy Compatibility)
 CREATE OR REPLACE VIEW `v_sisa_anggaran` AS

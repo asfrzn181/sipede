@@ -74,6 +74,7 @@
             <div id="masterAnggota" class="accordion-collapse collapse show" data-bs-parent="#masterAccordion"><div class="accordion-body small">
               <p>Menu ini berisi <strong>penerima tipe DPRD</strong>. Pendamping tidak dikelola dari halaman ini karena identitas pendamping dibuat dari akun user ber-role PENDAMPING.</p>
               <ol><li>Tambah atau edit nama anggota.</li><li>Isi jabatan serta periode jabatan bila tersedia.</li><li>Pastikan anggota aktif sebelum membuat pos otomatis.</li></ol>
+              <p class="mb-2"><strong>Aturan periode:</strong> anggota dengan periode 2024–2029 hanya ditawarkan dan dibuatkan pos pada tahun 2024 sampai 2029. Saat membuat tahun 2030, anggota tersebut tidak muncul otomatis. Perbarui periode atau input anggota baru untuk periode berikutnya.</p>
               <div class="alert alert-light border mb-0">Sumber data: tabel <code>penerima</code>. Import anggota DPRD juga menulis ke tabel ini.</div>
             </div></div>
           </div>
@@ -118,7 +119,7 @@
         <h2 class="h6 fw-bold">Cara membuka Pos Anggaran</h2>
         <p>Buka menu <strong>Tahun Anggaran</strong>, pilih satu tahun, lalu masuk ke detail <strong>Pos Anggaran</strong>. Pos dibaca berdasarkan tahun yang dipilih, sehingga pos 2024 tidak tercampur dengan pos 2025 atau 2026.</p>
         <h2 class="h6 fw-bold">Pos DPRD</h2>
-        <p>Pos DPRD dibuat satu untuk setiap anggota aktif. Pagu melekat pada anggota tersebut dan secara bawaan jenisnya adalah Fasilitas DPRD. Jenisnya tetap dapat diganti melalui tombol tag.</p>
+        <p>Pos DPRD dibuat satu untuk setiap anggota aktif yang periodenya mencakup tahun tersebut. Pagu melekat pada anggota tersebut dan secara bawaan jenisnya adalah Fasilitas DPRD. Jenisnya tetap dapat diganti melalui tombol tag.</p>
         <h2 class="h6 fw-bold">Pos Pendamping</h2>
         <p>Pos pendamping melekat pada jabatan/kelompok pos, bukan langsung pada satu orang. Satu pos dapat memiliki beberapa pemegang melalui penugasan.</p>
         <ol><li>Gunakan pos baku yang tersedia atau klik <strong>Tambah Pos Pendamping</strong> bila ada jabatan baru.</li><li>Pilih user pendamping melalui tombol <strong>Tugaskan</strong>.</li><li>Jika pemegang berubah, tutup penugasan lama dan buat penugasan baru agar histori tetap ada.</li></ol>

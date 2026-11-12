@@ -5,8 +5,10 @@ class Penerima_model extends CI_Model {
         return $this->db->order_by('tipe')->order_by('nama')->get('penerima')->result_array();
     }
 
-    public function all_active(): array {
-        return $this->db->where('is_active', 1)->order_by('tipe')->order_by('nama')->get('penerima')->result_array();
+    public function all_active(?int $tahun = null): array {
+        $this->db->from('penerima p')->where('p.is_active', 1);
+        if ($tahun) $this->apply_period_filter($tahun);
+        return $this->db->order_by('p.tipe')->order_by('p.nama')->get()->result_array();
     }
 
     public function all_by_tipe(string $tipe): array {
@@ -15,15 +17,40 @@ class Penerima_model extends CI_Model {
     }
 
     public function with_budget_source(int $year): array {
-        return $this->db
+        $tahunRow = $this->db->get_where('tahun_anggaran', ['id' => $year])->row_array();
+        $tahun = (int)($tahunRow['tahun'] ?? 0);
+        $this->db
             ->select('p.*,a.sumber_dana_id,sd.kode sumber_dana_kode,sd.nama sumber_dana_nama')
             ->from('penerima p')
             ->join('anggaran a','a.penerima_id=p.id AND a.tahun_anggaran_id='.(int)$year,'left')
             ->join('sumber_dana sd','sd.id=a.sumber_dana_id','left')
-            ->where('p.is_active',1)
-            ->order_by('p.tipe')
-            ->order_by('p.nama')
-            ->get()->result_array();
+            ->where('p.is_active',1);
+        if ($tahun) $this->apply_period_filter($tahun);
+        return $this->db->order_by('p.tipe')->order_by('p.nama')->get()->result_array();
+    }
+
+    /** Anggota DPRD hanya berlaku pada rentang periode jabatannya. */
+    public function berlaku_pada_tahun(array $penerima, int $tahun): bool {
+        if (($penerima['tipe'] ?? '') !== 'DPRD') return true;
+        $mulai = !empty($penerima['periode_mulai']) ? (int)$penerima['periode_mulai'] : null;
+        $akhir = !empty($penerima['periode_akhir']) ? (int)$penerima['periode_akhir'] : null;
+        return (!$mulai || $mulai <= $tahun) && (!$akhir || $akhir >= $tahun);
+    }
+
+    private function apply_period_filter(int $tahun): void {
+        $this->db->group_start();
+        $this->db->where('p.tipe !=', 'DPRD');
+        $this->db->or_group_start();
+        $this->db->group_start();
+        $this->db->where('p.periode_mulai IS NULL', null, false);
+        $this->db->or_where('p.periode_mulai <=', $tahun);
+        $this->db->group_end();
+        $this->db->group_start();
+        $this->db->where('p.periode_akhir IS NULL', null, false);
+        $this->db->or_where('p.periode_akhir >=', $tahun);
+        $this->db->group_end();
+        $this->db->group_end();
+        $this->db->group_end();
     }
 
     public function count_all(?string $tipe = null): int {

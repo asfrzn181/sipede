@@ -171,6 +171,8 @@ class Pos_model extends CI_Model {
                 pa.pagu - COALESCE(r.realisasi, 0) AS sisa
             FROM pos_anggaran pa
             LEFT JOIN jenis_anggaran ja ON ja.id = pa.jenis_anggaran_id
+            LEFT JOIN tahun_anggaran tahun_pos ON tahun_pos.id = pa.tahun_anggaran_id
+            LEFT JOIN penerima periode_penerima ON periode_penerima.id = pa.penerima_id AND pa.tipe = 'DPRD'
             LEFT JOIN (
                 SELECT x.pos_anggaran_id, SUM(x.nilai) AS realisasi
                 FROM (
@@ -185,7 +187,10 @@ class Pos_model extends CI_Model {
                     JOIN kegiatan k ON k.id = kp.kegiatan_id AND k.status = 'AKTIF'
                     WHERE kp.pos_anggaran_id IS NOT NULL
                 ) x GROUP BY x.pos_anggaran_id
-            ) r ON r.pos_anggaran_id = pa.id;
+            ) r ON r.pos_anggaran_id = pa.id
+            WHERE pa.tipe != 'DPRD'
+               OR ((periode_penerima.periode_mulai IS NULL OR periode_penerima.periode_mulai <= tahun_pos.tahun)
+               AND (periode_penerima.periode_akhir IS NULL OR periode_penerima.periode_akhir >= tahun_pos.tahun));
         ");
         $this->db->query("INSERT IGNORE INTO jenis_kegiatan (kode, nama, subjenis_json, urutan) VALUES
             ('PERJALANAN_DINAS', 'Perjalanan Dinas', JSON_ARRAY(), 1),
@@ -232,7 +237,8 @@ class Pos_model extends CI_Model {
                 "(pen.id = sp.penerima_id AND sp.tipe = 'DPRD') OR (pen.id = pp.penerima_id AND sp.tipe = 'PENDAMPING')",
                 'left')
             ->where('sp.tahun_anggaran_id', $tahunId)
-            ->where('sp.is_active', 1);
+            ->where('sp.is_active', 1)
+            ->where("(sp.tipe != 'DPRD' OR ((pen.periode_mulai IS NULL OR pen.periode_mulai <= ta.tahun) AND (pen.periode_akhir IS NULL OR pen.periode_akhir >= ta.tahun)))", null, false);
 
         if ($tipe) $this->db->where('sp.tipe', $tipe);
 
@@ -302,9 +308,19 @@ class Pos_model extends CI_Model {
         // Kelompoknya tetap dapat diganti dari menu Pos Anggaran.
         $jenisAnggaran = $this->db->get_where('jenis_anggaran', ['kode' => 'FASILITAS'])->row_array();
         if (!$jenisAnggaran) $jenisAnggaran = $this->db->get_where('jenis_anggaran', ['kode' => 'PERJALANAN_DINAS'])->row_array();
+        $tahunRow = $this->db->get_where('tahun_anggaran', ['id' => $tahunId])->row_array();
+        $tahun = (int)($tahunRow['tahun'] ?? 0);
         $penerimaList = $this->db
             ->where('tipe', 'DPRD')
             ->where('is_active', 1)
+            ->group_start()
+            ->where('periode_mulai IS NULL', null, false)
+            ->or_where('periode_mulai <=', $tahun)
+            ->group_end()
+            ->group_start()
+            ->where('periode_akhir IS NULL', null, false)
+            ->or_where('periode_akhir >=', $tahun)
+            ->group_end()
             ->order_by('nama')
             ->get('penerima')->result_array();
 
