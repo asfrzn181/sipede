@@ -38,7 +38,7 @@
           <label class="form-label small fw-semibold">Status Kegiatan</label>
           <select class="form-select" name="status">
             <option value="">Semua Status</option>
-            <option value="AKTIF" <?= $filter['status'] === 'AKTIF' ? 'selected' : '' ?>>AKTIF</option>
+            <option value="AKTIF" <?= $filter['status'] === 'AKTIF' ? 'selected' : '' ?>>Selesai / Terverifikasi</option>
             <option value="DIAJUKAN" <?= $filter['status'] === 'DIAJUKAN' ? 'selected' : '' ?>>DIAJUKAN</option>
             <option value="DRAFT" <?= $filter['status'] === 'DRAFT' ? 'selected' : '' ?>>DRAFT</option>
             <option value="BATAL" <?= $filter['status'] === 'BATAL' ? 'selected' : '' ?>>BATAL</option>

@@ -126,7 +126,7 @@
               <label class="form-label small fw-semibold">Status Awal</label>
               <select class="form-select" name="status" id="inpStatus">
                 <option value="DRAFT">DRAFT</option>
-                <option value="AKTIF">AKTIF</option>
+                <option value="AKTIF">Selesai / Terverifikasi</option>
               </select>
             </div>
             <div class="col-12">

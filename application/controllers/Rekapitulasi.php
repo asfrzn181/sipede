@@ -48,6 +48,10 @@ class Rekapitulasi extends MY_Controller
         $totalBiaya      = 0.0;
 
         foreach ($rows as $r) {
+            // Hanya kegiatan berstatus AKTIF yang dihitung sebagai realisasi.
+            if (($r['status'] ?? '') !== 'AKTIF') {
+                continue;
+            }
             $totalPeserta    += (int)$r['jumlah_peserta'];
             $totalDprd       += (int)$r['jumlah_dprd'];
             $totalPendamping += (int)$r['jumlah_pendamping'];
@@ -132,7 +136,8 @@ class Rekapitulasi extends MY_Controller
                 . '</div></div>';
 
             $totalHtml = '<div class="text-end fw-bold text-primary">' . rupiah($row['total']) . '</div>';
-            $statusHtml = '<div class="text-center"><span class="badge text-bg-' . $bClass . '">' . html_escape($row['status']) . '</span></div>';
+            $statusLabel = $row['status'] === 'AKTIF' ? 'Selesai / Terverifikasi' : $row['status'];
+            $statusHtml = '<div class="text-center"><span class="badge text-bg-' . $bClass . '">' . html_escape($statusLabel) . '</span></div>';
 
             $aksiHtml = '<div class="text-end text-nowrap d-print-none"><div class="btn-group btn-group-sm">'
                 . '<a href="' . site_url('kegiatan/bukti_rekap/' . $encId) . '" class="btn btn-outline-info" title="Bukti Rekapitulasi"><i class="bi bi-receipt"></i> Bukti</a>'

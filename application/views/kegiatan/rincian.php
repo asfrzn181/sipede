@@ -412,7 +412,7 @@
               <label class="form-label small fw-semibold">Status</label>
               <select class="form-select" name="status">
                 <option value="DRAFT" <?= $status === 'DRAFT' ? 'selected' : '' ?>>DRAFT</option>
-                <option value="AKTIF" <?= $status === 'AKTIF' ? 'selected' : '' ?>>AKTIF</option>
+                <option value="AKTIF" <?= $status === 'AKTIF' ? 'selected' : '' ?>>Selesai / Terverifikasi</option>
               </select>
             </div>
             <div class="col-12">

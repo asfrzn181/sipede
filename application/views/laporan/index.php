@@ -41,7 +41,7 @@
           <label class="form-label small fw-semibold">Status Kegiatan</label>
           <select class="form-select" name="status">
             <option value="">Semua Status</option>
-            <option value="AKTIF">AKTIF</option>
+            <option value="AKTIF">Selesai / Terverifikasi</option>
             <option value="DRAFT">DRAFT</option>
             <option value="DIAJUKAN">DIAJUKAN</option>
             <option value="DITOLAK">DITOLAK</option>

@@ -114,7 +114,7 @@ class Kegiatan extends MY_Controller
             $tempatHtml = '<div><i class="bi bi-geo-alt text-danger me-1"></i>' . html_escape($row['tempat'] ?: '-') . '</div>';
             $pesertaHtml = '<div class="text-center"><span class="badge text-bg-light border">' . (int)($row['total_peserta'] ?? 0) . ' Org</span></div>';
             $totalHtml = '<div class="text-end fw-bold text-primary">' . rupiah($row['total']) . '</div>';
-            $displayStatus = !empty($row['dicetak_at']) ? 'SELESAI DICETAK' : $row['status'];
+            $displayStatus = !empty($row['dicetak_at']) ? 'SELESAI DICETAK' : ($row['status'] === 'AKTIF' ? 'Selesai / Terverifikasi' : $row['status']);
             $displayClass = !empty($row['dicetak_at']) ? 'info' : $bClass;
             $statusHtml = '<div class="text-center"><span class="badge text-bg-' . $displayClass . '">' . html_escape($displayStatus) . '</span></div>';
 
