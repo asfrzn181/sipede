@@ -6,7 +6,7 @@
 # Composer dependencies
 /vendor/
 
-# Data import lokal / operasional (jangan commit)
+# Data import lokal / operasional (jangan commit; inject selalu lokal)
 /database/import_anggota_*.sql
 /database/inject_*.sql
 /database/*inject*.sql

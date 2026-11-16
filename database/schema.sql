@@ -2,6 +2,8 @@
 -- SIPEDE (Sistem Informasi Perjalanan Dinas DPRD)
 -- SKEMA DATABASE BERSIH TERBARU
 -- =============================================================================
+-- FRESH INSTALL: file ini menghapus dan membuat ulang seluruh tabel aplikasi.
+-- Backup database lama sebelum menjalankan file ini.
 
 -- Pilih database tujuan terlebih dahulu di phpMyAdmin/cPanel.
 -- File ini sengaja tidak memakai CREATE DATABASE atau USE agar dapat

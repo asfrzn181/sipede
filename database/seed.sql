@@ -2,6 +2,7 @@
 -- SIPEDE (Sistem Informasi Perjalanan Dinas DPRD)
 -- DATA SEED AWAL BERSIH (CLEAN SEED - HANYA AKUN ADMINISTRATOR)
 -- =============================================================================
+-- Jalankan setelah database/schema.sql selesai.
 
 -- Pilih database tujuan terlebih dahulu di phpMyAdmin/cPanel.
 
@@ -267,5 +268,5 @@ ON DUPLICATE KEY UPDATE `tahun` = 2026, `is_locked` = 0;
 -- Tabel 'penugasan_pos' KOSONG
 -- Administrator dapat mulai testing dari awal.
 -- Jalankan database/inject_anggota_dprd_2024_2029.sql bila ingin memasukkan
--- 34 anggota DPRD beserta pagu dan pos anggarannya.
+-- 34 anggota DPRD beserta pos anggaran dengan pagu awal 0.
 

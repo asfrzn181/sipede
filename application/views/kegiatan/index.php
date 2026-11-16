@@ -96,18 +96,20 @@
               </select>
               <div class="form-text small">Tahun ini menjadi acuan pagu, pos anggaran, dan rincian biaya kegiatan.</div>
             </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold">Jenis Kegiatan <span class="text-danger">*</span></label>
-              <select class="form-select" name="jenis_kegiatan_id" id="inpJenisKegiatan" required>
-                <?php foreach (($jenis_kegiatan ?? array()) as $jk): ?>
-                  <option value="<?= (int)$jk['id'] ?>"><?= html_escape($jk['nama']) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold">Subjenis / Kategori</label>
-              <input class="form-control" name="subjenis_kegiatan" id="inpSubjenisKegiatan" placeholder="Contoh: Rapat Komisi I">
-            </div>
+            <?php
+              $defaultJenisKegiatanId = 0;
+              foreach (($jenis_kegiatan ?? array()) as $jk) {
+                if (stripos((string)($jk['nama'] ?? ''), 'Perjalanan Dinas') !== false) {
+                  $defaultJenisKegiatanId = (int)$jk['id'];
+                  break;
+                }
+              }
+              if (!$defaultJenisKegiatanId && !empty($jenis_kegiatan[0]['id'])) {
+                $defaultJenisKegiatanId = (int)$jenis_kegiatan[0]['id'];
+              }
+            ?>
+            <input type="hidden" name="jenis_kegiatan_id" id="inpJenisKegiatan" value="<?= $defaultJenisKegiatanId ?>">
+            <input type="hidden" name="subjenis_kegiatan" id="inpSubjenisKegiatan" value="-">
             <div class="col-12 col-md-6">
               <label class="form-label small fw-semibold">Tanggal Pelaksanaan Mulai <span class="text-danger">*</span></label>
               <input class="form-control" type="date" name="tanggal_mulai" id="inpTglMulai" required>

@@ -225,6 +225,17 @@ class Kegiatan extends MY_Controller
             $this->respond(FALSE, 'Tahun anggaran telah dikunci dan tidak dapat digunakan untuk kegiatan baru/edit.', array(), array(), 422);
         }
 
+        $jenisKegiatanId = (int)$this->input->post('jenis_kegiatan_id');
+        if (!$jenisKegiatanId) {
+            $rowJenis = $this->db->get_where('jenis_kegiatan', array('kode' => 'PERJALANAN_DINAS'))->row_array();
+            $jenisKegiatanId = (int)($rowJenis['id'] ?? 0);
+        }
+
+        $subjenisKegiatan = trim((string)$this->input->post('subjenis_kegiatan', TRUE));
+        if ($subjenisKegiatan === '') {
+            $subjenisKegiatan = '-';
+        }
+
         $data = array(
             'tahun_anggaran_id'   => $tahunAnggaranId,
             'no_surat_tugas'      => trim((string)$this->input->post('no_surat_tugas', TRUE)),
@@ -235,8 +246,8 @@ class Kegiatan extends MY_Controller
             'tempat'              => trim((string)$this->input->post('tempat', TRUE)),
             'tema'                => trim((string)$this->input->post('tema', TRUE)),
             'nama_kegiatan'       => trim((string)$this->input->post('tema', TRUE)),
-            'jenis_kegiatan_id'   => (int)$this->input->post('jenis_kegiatan_id'),
-            'subjenis_kegiatan'   => trim((string)$this->input->post('subjenis_kegiatan', TRUE)),
+            'jenis_kegiatan_id'   => $jenisKegiatanId ?: null,
+            'subjenis_kegiatan'   => $subjenisKegiatan,
             'status'              => $this->rbac->scope('kegiatan') === 'own'
                 ? 'DRAFT'
                 : ($this->input->post('status', TRUE) ?: 'DRAFT'),
@@ -317,15 +328,14 @@ class Kegiatan extends MY_Controller
 
         if ($this->rbac->scope('kegiatan') === 'own') {
             $ownPenerimaId = $this->own_penerima_id();
-            if (!$ownPenerimaId || $penerimaId !== $ownPenerimaId
-                || !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) {
+            if (!$ownPenerimaId || !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) {
                 $this->deny();
             }
+            // Pendamping boleh menambah peserta lain pada kegiatan miliknya sendiri.
             if ($kegiatanPesertaId) {
                 $ownedParticipant = $this->db->where(array(
                     'id' => $kegiatanPesertaId,
-                    'kegiatan_id' => $kegiatanId,
-                    'penerima_id' => $ownPenerimaId
+                    'kegiatan_id' => $kegiatanId
                 ))->count_all_results('kegiatan_peserta');
                 if (!$ownedParticipant) $this->deny();
             }
