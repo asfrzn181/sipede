@@ -30,18 +30,18 @@ $rows = $detail['rows'] ?? array();
       <div class="col-12 col-md-6">
         <label class="form-label small fw-semibold">Nama Anggota / Notulen / Pendamping</label>
         <select name="penerima_id" class="form-select select2-perorang" id="selectPenerimaPerorang">
-          <?php foreach($penerima as $row): ?>
-            <?php
-              if ($row['tipe'] === 'DPRD') {
-                  $labelTampil = $row['nama'] . ' — ' . ($row['jabatan'] ?: 'Anggota DPRD') . ' (DPRD)';
-              } elseif (!empty($row['pos_nama'])) {
-                  $labelTampil = $row['pos_nama'];
-              } else {
-                  $labelTampil = $row['nama'] . ' — ' . ($row['jabatan'] ?: 'Pendamping') . ' (PENDAMPING)';
-              }
-            ?>
-            <option value="<?= (int)$row['id'] ?>" <?= (int)$row['id'] === (int)$penerimaId ? 'selected' : '' ?>><?= html_escape($labelTampil) ?></option>
-          <?php endforeach; ?>
+          <optgroup label="Anggota DPRD">
+            <?php foreach($penerima as $row): ?>
+              <?php if ($row['tipe'] === 'DPRD'): ?>
+                <option value="<?= (int)$row['id'] ?>" <?= (int)$row['id'] === (int)$penerimaId ? 'selected' : '' ?>><?= html_escape($row['nama']) ?> — <?= html_escape($row['jabatan'] ?: 'Anggota DPRD') ?></option>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </optgroup>
+          <optgroup label="Anggaran Pendamping / Notulen">
+            <?php foreach(($posPendamping ?? array()) as $pos): ?>
+              <option value="pos_<?= (int)$pos['id'] ?>" <?= ('pos_' . (int)$pos['id']) === $this->input->get('penerima_id') ? 'selected' : '' ?>><?= html_escape($pos['nama']) ?></option>
+            <?php endforeach; ?>
+          </optgroup>
         </select>
       </div>
       <div class="col-12 col-md-3"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-search me-1"></i>Tampilkan</button></div>

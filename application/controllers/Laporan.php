@@ -10,7 +10,7 @@ class Laporan extends MY_Controller
     {
         parent::__construct();
         $this->require_login();
-        $this->load->model(array('Laporan_model', 'Penerima_model', 'Jenis_biaya_model', 'Tahun_model'));
+        $this->load->model(array('Laporan_model', 'Penerima_model', 'Jenis_biaya_model', 'Tahun_model', 'Pos_model'));
     }
 
     public function index(): void
@@ -113,20 +113,34 @@ class Laporan extends MY_Controller
     {
         list($tahunList, $tahunId, $tahunLabel) = $this->tahun_laporan();
         $penerima = $this->Penerima_model->all_active((int)$tahunLabel);
-        $penerimaId = (int)$this->input->get('penerima_id');
+        $posPendamping = $this->Pos_model->all_by_tahun($tahunId, 'PENDAMPING');
+        $rawTarget = $this->input->get('penerima_id');
+        $penerimaId = 0;
+        $posId = 0;
+        if (is_string($rawTarget) && strpos($rawTarget, 'pos_') === 0) {
+            $posId = (int)substr($rawTarget, 4);
+        } else {
+            $penerimaId = (int)$rawTarget;
+        }
         if ($this->rbac->scope('laporan') === 'own') {
             $penerimaId = (int)$this->own_penerima_id();
+            $posId = 0;
         }
-        if (!$penerimaId && !empty($penerima)) $penerimaId = (int)$penerima[0]['id'];
-        $detail = $penerimaId ? $this->Laporan_model->detail_perorang($tahunId, $penerimaId) : array();
+        if (!$penerimaId && !$posId && !empty($penerima)) $penerimaId = (int)$penerima[0]['id'];
 
-        return array($tahunList, $tahunId, $tahunLabel, $penerima, $penerimaId, $detail);
+        if ($posId) {
+            $detail = $this->Laporan_model->detail_perorang_pos($tahunId, $posId);
+        } else {
+            $detail = $penerimaId ? $this->Laporan_model->detail_perorang($tahunId, $penerimaId) : array();
+        }
+
+        return array($tahunList, $tahunId, $tahunLabel, $penerima, $posPendamping, $penerimaId, $posId, $detail);
     }
 
     public function perorang(): void
     {
         $this->require_any(array('laporan.view_all', 'laporan.view_own'));
-        list($tahunList, $tahunId, $tahunLabel, $penerima, $penerimaId, $detail) = $this->perorang_context();
+        list($tahunList, $tahunId, $tahunLabel, $penerima, $posPendamping, $penerimaId, $posId, $detail) = $this->perorang_context();
         $this->load->view('layout/main', array(
             'title' => 'Laporan Per Orang',
             'view'  => 'laporan/perorang',
@@ -135,7 +149,9 @@ class Laporan extends MY_Controller
                 'tahunId' => $tahunId,
                 'tahunLabel' => $tahunLabel,
                 'penerima' => $penerima,
+                'posPendamping' => $posPendamping,
                 'penerimaId' => $penerimaId,
+                'posId' => $posId,
                 'detail' => $detail,
                 'can_export' => can('laporan.export'),
             )
@@ -145,7 +161,7 @@ class Laporan extends MY_Controller
     public function perorang_excel(): void
     {
         $this->require_permission('laporan.export');
-        list(, $tahunId, $tahunLabel, , $penerimaId, $detail) = $this->perorang_context();
+        list(, $tahunId, $tahunLabel, , , $penerimaId, $posId, $detail) = $this->perorang_context();
         if (empty($detail['person'])) show_error('Anggota DPRD tidak ditemukan.', 404);
 
         $components = $detail['components'];
