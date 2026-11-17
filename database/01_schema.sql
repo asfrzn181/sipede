@@ -251,7 +251,7 @@ DROP TABLE IF EXISTS `anggaran`;
 CREATE TABLE `anggaran` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `tahun_anggaran_id` INT UNSIGNED NOT NULL,
-  `penerima_id` INT UNSIGNED NOT NULL,
+  `penerima_id` INT UNSIGNED NULL,
   `sumber_dana_id` INT UNSIGNED NULL,
   `pagu` DECIMAL(18,2) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
@@ -340,7 +340,7 @@ CREATE TABLE `kegiatan_anggaran` (
 CREATE TABLE `kegiatan_peserta` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `kegiatan_id` INT UNSIGNED NOT NULL,
-  `penerima_id` INT UNSIGNED NOT NULL,
+  `penerima_id` INT UNSIGNED NULL,
   `sumber_dana_id` INT UNSIGNED NULL,
   `kegiatan_anggaran_id` INT UNSIGNED NULL,
   `pos_anggaran_id` INT UNSIGNED NULL,     -- Pos anggaran yang dibebani
