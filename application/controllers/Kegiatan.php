@@ -562,11 +562,16 @@ class Kegiatan extends MY_Controller
         if (!$rawId) $this->respond(FALSE, 'ID tidak valid.', array(), array(), 422);
 
         if ($this->rbac->scope('kegiatan') === 'own') {
-            $ownedParticipant = $this->db->from('kegiatan_peserta')
-                ->where('id', $rawId)
-                ->where('penerima_id', $this->own_penerima_id())
-                ->count_all_results();
-            if (!$ownedParticipant) $this->deny();
+            $kp = $this->db->get_where('kegiatan_peserta', array('id' => $rawId))->row_array();
+            $allowed = false;
+            if ($kp) {
+                $ownPenerimaId = $this->own_penerima_id();
+                $ownPendampingId = $this->own_pendamping_id();
+                if ($ownPenerimaId && (int)$kp['penerima_id'] === $ownPenerimaId) $allowed = true;
+                if ($ownPendampingId && (int)$kp['pendamping_id'] === $ownPendampingId) $allowed = true;
+                if ((int)($kp['kegiatan_id'] ?? 0) && $this->Kegiatan_model->find((int)$kp['kegiatan_id'])['created_by'] == $this->user['id']) $allowed = true;
+            }
+            if (!$allowed) $this->deny();
         }
 
         $ok = $this->Kegiatan_model->delete_peserta($rawId);
@@ -589,9 +594,14 @@ class Kegiatan extends MY_Controller
         $kegiatan = $this->Kegiatan_model->get_full_detail($kegiatanId);
         if (!$kegiatan) show_404();
 
-        if ($this->rbac->scope('kegiatan') === 'own'
-            && !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $this->own_penerima_id())) {
-            $this->deny();
+        if ($this->rbac->scope('kegiatan') === 'own') {
+            $ownPenerimaId = $this->own_penerima_id();
+            $ownPendampingId = $this->own_pendamping_id();
+            $allowed = false;
+            if ($ownPenerimaId && $this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) $allowed = true;
+            if ($ownPendampingId && $this->Kegiatan_model->belongs_to_pendamping($kegiatanId, $ownPendampingId)) $allowed = true;
+            if ((int)($kegiatan['created_by'] ?? 0) === (int)$this->user['id']) $allowed = true;
+            if (!$allowed) $this->deny();
         }
 
         if (empty($kegiatan['dicetak_at'])) {
