@@ -265,8 +265,8 @@
               <?php
                 $pData = array(
                   'id'                => $encKpId,
-                  'penerima_id'       => $encPenerimaId,
-                  'pos_anggaran_id'   => !empty($p['pos_anggaran_id']) ? encrypt_id($p['pos_anggaran_id']) : '',
+                  'penerima_id'       => (int)$p['penerima_id'],
+                  'pos_anggaran_id'   => !empty($p['pos_anggaran_id']) ? (int)$p['pos_anggaran_id'] : '',
                   'alasan_pengalihan' => $p['alasan_pengalihan'] ?? '',
                   'dana_awal'         => $danaAwalPeserta,
                   'nama'              => $p['nama'],
@@ -511,7 +511,7 @@
                 <optgroup label="Anggota DPRD">
                   <?php foreach($penerima as $p): ?>
                     <?php if($p['tipe'] === 'DPRD'): ?>
-                    <option value="<?= encrypt_id($p['id']) ?>" data-tipe="DPRD">
+                    <option value="<?= (int)$p['id'] ?>" data-tipe="DPRD">
                       <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'Anggota') ?> (DPRD)
                     </option>
                     <?php endif; ?>
@@ -520,7 +520,7 @@
                 <optgroup label="Pendamping / ASN">
                   <?php foreach($penerima as $p): ?>
                     <?php if($p['tipe'] !== 'DPRD'): ?>
-                    <option value="<?= encrypt_id($p['id']) ?>" data-tipe="PENDAMPING">
+                    <option value="<?= (int)$p['id'] ?>" data-tipe="PENDAMPING">
                       <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'ASN Pendamping') ?> (PENDAMPING)
                     </option>
                     <?php endif; ?>
@@ -537,7 +537,7 @@
                 <?php foreach(array('DPRD', 'PENDAMPING', 'KEGIATAN') as $tipePos): ?>
                   <optgroup label="<?= $tipePos === 'DPRD' ? 'Anggaran DPRD' : ($tipePos === 'PENDAMPING' ? 'Anggaran Pendamping / Jabatan' : 'Anggaran Kegiatan / Rapat') ?>">
                     <?php foreach($pos_anggaran as $pp): if($pp['tipe'] !== $tipePos) continue; ?>
-                    <option value="<?= encrypt_id($pp['id']) ?>"
+                    <option value="<?= (int)$pp['id'] ?>"
                             data-pemegang-id="<?= $pp['penugasan_penerima_id'] ?>"
                             data-pemegang-nama="<?= html_escape($pp['pemegang_nama'] ?? '-') ?>"
                             data-pos-nama="<?= html_escape($pp['nama']) ?>"

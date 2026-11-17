@@ -195,16 +195,12 @@ INSERT INTO `sumber_dana` (`kode`, `nama`, `is_active`) VALUES
 ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `is_active` = 1;
 
 -- Jenis Biaya Perjalanan Dinas
+-- Sisakan 4 komponen baku otomatis.
 INSERT INTO `jenis_biaya` (`kode`, `nama`, `satuan`, `tampil_di_kegiatan`, `is_active`) VALUES
-('UANG_HARIAN',    'Uang Harian',          'orang/hari', 1, 1),
-('TRANSPORT',      'Uang Transport',       'orang',      1, 1),
-('UANG_REPRESENTATIF', 'Uang Representatif','orang/hari', 1, 1),
-('PENGINAPAN',     'Uang Penginapan',      'malam',      1, 1),
-('TIKET',          'Tiket Perjalanan',     'tiket',      0, 1),
-('SEWA_KENDARAAN', 'Sewa Kendaraan',       'hari',       0, 1),
-('KONSUMSI',       'Konsumsi',             'orang',      0, 1),
-('ATK',            'Alat Tulis Kantor',    'paket',      0, 1),
-('DOKUMENTASI',    'Dokumentasi Kegiatan', 'kegiatan',   0, 1)
+('UANG_HARIAN',        'Uang Harian',          'orang/hari', 1, 1),
+('PENGINAPAN',         'Uang Penginapan',      'malam',      1, 1),
+('UANG_REPRESENTATIF', 'Uang Representatif',   'orang/hari', 1, 1),
+('TRANSPORT',          'Uang Transport',       'orang',      1, 1)
 ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `satuan` = VALUES(`satuan`), `tampil_di_kegiatan` = VALUES(`tampil_di_kegiatan`), `is_active` = 1;
 
 -- Jenis Kegiatan dan Kelompok Anggaran (dipakai bersama oleh seluruh modul kegiatan)
@@ -216,11 +212,7 @@ INSERT INTO `jenis_kegiatan` (`kode`, `nama`, `subjenis_json`, `urutan`) VALUES
 ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `subjenis_json` = VALUES(`subjenis_json`), `is_active` = 1;
 
 INSERT INTO `jenis_anggaran` (`kode`, `nama`, `keterangan`, `urutan`) VALUES
-('FASILITAS', 'Fasilitas DPRD', 'Pagu untuk fasilitas dan kebutuhan pendukung DPRD.', 1),
-('RAPAT', 'Rapat', 'Pagu untuk rapat paripurna, komisi, Banggar, Bamus, dan rapat khusus.', 2),
-('PERJALANAN_DINAS', 'Perjalanan Dinas', 'Pagu perjalanan dinas anggota DPRD dan pendamping.', 3),
-('HONORARIUM', 'Honorarium / Notulen', 'Pagu honorarium, notulen, dan tenaga pendukung.', 4),
-('LAINNYA', 'Anggaran Lainnya', 'Kelompok anggaran tambahan sesuai kebutuhan.', 99)
+('PERJALANAN_DINAS', 'Perjalanan Dinas', 'Pagu perjalanan dinas anggota DPRD dan pendamping.', 1)
 ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `keterangan` = VALUES(`keterangan`), `is_active` = 1;
 
 -- Pengaturan KOP Dokumen & Pejabat Penandatangan Resmi (Default)
