@@ -73,8 +73,8 @@ Jika hosting Anda mendukung fitur Git bawaan cPanel:
    - Buat user database baru dan berikan hak akses penuh (*ALL PRIVILEGES*).
 2. Buka menu **phpMyAdmin** di cPanel:
    - Pilih database yang baru dibuat.
-   - Klik tab **Import** &gt; pilih `database/schema.sql`, lalu `database/seed.sql`.
-   - Untuk memasukkan 34 anggota DPRD, import `database/inject_anggota_dprd_2024_2029.sql` setelah seed.
+   - Klik tab **Import** &gt; pilih `database/01_schema.sql`, lalu `database/02_seed.sql`.
+   - Untuk memasukkan 34 anggota DPRD, import `database/03_inject_anggota_dprd_2024_2029.sql` setelah seed.
    - Jika database sudah berjalan dan tidak ingin instal ulang, import `database/migrate_fleksibel_anggaran.sql` untuk menambahkan jenis kegiatan dan alokasi multi-pos.
 3. Di **cPanel File Manager**:
    - Salin berkas `.env.example` menjadi `.env` di folder root situs Anda.
