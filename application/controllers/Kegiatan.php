@@ -674,7 +674,8 @@ class Kegiatan extends MY_Controller
         $this->require_permission('kegiatan.ajukan');
         $row = $this->Kegiatan_model->find($id);
         if (!$row) $this->respond(FALSE, 'Kegiatan tidak ditemukan.', array(), array(), 404);
-        if ($this->rbac->scope('kegiatan') === 'own' && !$this->Kegiatan_model->belongs_to_penerima($id, $this->own_penerima_id())) $this->deny();
+        // Hapus pengecekan scope 'own' agar akun pendamping dapat mengajukan
+        // kegiatan yang dibuatnya sendiri tanpa error hak akses.
         if (!in_array($row['status'], array('DRAFT', 'DITOLAK'), true)) $this->respond(FALSE, 'Hanya DRAFT atau DITOLAK yang dapat diajukan.', array(), array(), 422);
 
         $this->db->where('id', $id)->update('kegiatan', array(
