@@ -29,21 +29,21 @@
       </div>
     </div>
 
-    <!-- Kolom 2: Bendahara Pengeluaran -->
+    <!-- Kolom 2: verifikator Pengeluaran -->
     <div class="col-6">
       <div class="ttd-header" style="min-height: 48px;">
         <span><?= html_escape($kota) ?>, <?= $tanggalStr ?></span><br>
-        <strong><?= html_escape($setting['bendahara_label']) ?></strong>
+        <strong><?= html_escape($setting['verifikator_label']) ?></strong>
       </div>
       <div class="ttd-space" style="height: 75px;"></div>
       <div class="ttd-body">
         <strong class="text-decoration-underline d-block fw-bold text-dark">
-          <?= html_escape($setting['bendahara_nama']) ?>
+          <?= html_escape($setting['verifikator_nama']) ?>
         </strong>
-        <?php if (!empty($setting['bendahara_pangkat'])): ?>
-          <div class="text-muted small"><?= html_escape($setting['bendahara_pangkat']) ?></div>
+        <?php if (!empty($setting['verifikator_pangkat'])): ?>
+          <div class="text-muted small"><?= html_escape($setting['verifikator_pangkat']) ?></div>
         <?php endif; ?>
-        <span class="text-muted small">NIP. <?= html_escape($setting['bendahara_nip']) ?></span>
+        <span class="text-muted small">NIP. <?= html_escape($setting['verifikator_nip']) ?></span>
       </div>
     </div>
   </div>

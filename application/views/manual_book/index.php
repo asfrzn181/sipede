@@ -202,7 +202,7 @@
         <dl class="row mb-0">
           <dt class="col-sm-4">Pengguna</dt><dd class="col-sm-8">Membuat akun, memilih role, menghubungkan akun pendamping, mengaktifkan/nonaktifkan user, dan mengatur password.</dd>
           <dt class="col-sm-4">Role &amp; Izin</dt><dd class="col-sm-8">Menentukan modul apa yang dapat dilihat atau diubah oleh role tertentu.</dd>
-          <dt class="col-sm-4">KOP &amp; Penandatangan</dt><dd class="col-sm-8">Mengatur identitas KOP, alamat, logo aplikasi, PPTK, dan Bendahara Pengeluaran.</dd>
+          <dt class="col-sm-4">KOP &amp; Penandatangan</dt><dd class="col-sm-8">Mengatur identitas KOP, alamat, logo aplikasi, PPTK, dan verifikator Pengeluaran.</dd>
           <dt class="col-sm-4">Audit Log</dt><dd class="col-sm-8">Menampilkan jejak perubahan data penting, termasuk user dan waktu perubahan.</dd>
           <dt class="col-sm-4">Profil Pengguna</dt><dd class="col-sm-8">Mengubah password akun yang sedang login.</dd>
           <dt class="col-sm-4">Manual Book</dt><dd class="col-sm-8">Membaca atau mencetak panduan ini.</dd>

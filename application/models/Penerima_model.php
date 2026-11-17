@@ -6,6 +6,7 @@ class Penerima_model extends CI_Model {
     }
 
     public function all_active(?int $tahun = null): array {
+        $this->db->select('p.*, (SELECT pa.nama FROM penugasan_pos pp JOIN pos_anggaran pa ON pa.id = pp.pos_anggaran_id WHERE pp.penerima_id = p.id AND pp.tanggal_selesai IS NULL ORDER BY pp.created_at DESC LIMIT 1) AS pos_nama', false);
         $this->db->from('penerima p')->where('p.is_active', 1);
         if ($tahun) $this->apply_period_filter($tahun);
         return $this->db->order_by('p.tipe')->order_by('p.nama')->get()->result_array();

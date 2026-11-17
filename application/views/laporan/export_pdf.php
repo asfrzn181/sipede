@@ -220,13 +220,13 @@
       </td>
       <td>
         <span><?= html_escape($setting['kota_penetapan'] ?? 'Kota') ?>, <?= tgl_indo(date('Y-m-d')) ?></span><br>
-        <strong><?= html_escape($setting['bendahara_label']) ?></strong>
+        <strong><?= html_escape($setting['verifikator_label']) ?></strong>
         <div class="ttd-space"></div>
-        <strong style="text-decoration: underline; display: block;"><?= html_escape($setting['bendahara_nama']) ?></strong>
-        <?php if (!empty($setting['bendahara_pangkat'])): ?>
-          <div><?= html_escape($setting['bendahara_pangkat']) ?></div>
+        <strong style="text-decoration: underline; display: block;"><?= html_escape($setting['verifikator_nama']) ?></strong>
+        <?php if (!empty($setting['verifikator_pangkat'])): ?>
+          <div><?= html_escape($setting['verifikator_pangkat']) ?></div>
         <?php endif; ?>
-        <span>NIP. <?= html_escape($setting['bendahara_nip']) ?></span>
+        <span>NIP. <?= html_escape($setting['verifikator_nip']) ?></span>
       </td>
     </tr>
   </table>

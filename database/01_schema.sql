@@ -406,12 +406,12 @@ CREATE TABLE `pengaturan_dokumen` (
   `pptk_nip` VARCHAR(50) NOT NULL DEFAULT '19820415 200501 1 008',
   `pptk_pangkat` VARCHAR(100) NULL DEFAULT 'Penata Tk. I (III/d)',
 
-  -- Penandatangan 2: Bendahara Pengeluaran
-  `bendahara_label` VARCHAR(100) NOT NULL DEFAULT 'Bendahara Pengeluaran',
-  `bendahara_jabatan` VARCHAR(150) NOT NULL DEFAULT 'Bendahara Pengeluaran',
-  `bendahara_nama` VARCHAR(150) NOT NULL DEFAULT 'SITI NURHALIZA, S.Ak.',
-  `bendahara_nip` VARCHAR(50) NOT NULL DEFAULT '19881120 201101 2 004',
-  `bendahara_pangkat` VARCHAR(100) NULL DEFAULT 'Penata Muda Tk. I (III/b)',
+  -- Penandatangan 2: verifikator Pengeluaran
+  `verifikator_label` VARCHAR(100) NOT NULL DEFAULT 'verifikator Pengeluaran',
+  `verifikator_jabatan` VARCHAR(150) NOT NULL DEFAULT 'verifikator Pengeluaran',
+  `verifikator_nama` VARCHAR(150) NOT NULL DEFAULT 'SITI NURHALIZA, S.Ak.',
+  `verifikator_nip` VARCHAR(50) NOT NULL DEFAULT '19881120 201101 2 004',
+  `verifikator_pangkat` VARCHAR(100) NULL DEFAULT 'Penata Muda Tk. I (III/b)',
 
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

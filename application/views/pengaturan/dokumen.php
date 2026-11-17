@@ -152,36 +152,36 @@
                   </div>
                 </div>
 
-                <!-- 2. Bendahara Pengeluaran -->
+                <!-- 2. verifikator Pengeluaran -->
                 <div class="accordion-item border shadow-none rounded overflow-hidden">
                   <h2 class="accordion-header">
-                    <button class="accordion-button fw-bold bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accBendahara">
+                    <button class="accordion-button fw-bold bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accverifikator">
                       <i class="bi bi-cash-coin text-success me-2 fs-5"></i>
-                      <span>2. Bendahara Pengeluaran</span>
+                      <span>2. verifikator Pengeluaran</span>
                     </button>
                   </h2>
-                  <div id="accBendahara" class="accordion-collapse collapse">
+                  <div id="accverifikator" class="accordion-collapse collapse">
                     <div class="accordion-body p-3 bg-white">
                       <div class="row g-3">
                         <div class="col-12 col-md-6">
                           <label class="form-label small fw-semibold">Label Atas Tanda Tangan</label>
-                          <input type="text" class="form-control" name="bendahara_label" id="inpBendaharaLabel" value="<?= html_escape($setting['bendahara_label']) ?>" placeholder="Contoh: Bendahara Pengeluaran">
+                          <input type="text" class="form-control" name="verifikator_label" id="inpverifikatorLabel" value="<?= html_escape($setting['verifikator_label']) ?>" placeholder="Contoh: verifikator Pengeluaran">
                         </div>
                         <div class="col-12 col-md-6">
                           <label class="form-label small fw-semibold">Jabatan</label>
-                          <input type="text" class="form-control" name="bendahara_jabatan" id="inpBendaharaJabatan" value="<?= html_escape($setting['bendahara_jabatan']) ?>" placeholder="Contoh: Bendahara Pengeluaran Sekretariat DPRD">
+                          <input type="text" class="form-control" name="verifikator_jabatan" id="inpverifikatorJabatan" value="<?= html_escape($setting['verifikator_jabatan']) ?>" placeholder="Contoh: verifikator Pengeluaran Sekretariat DPRD">
                         </div>
                         <div class="col-12 col-md-6">
                           <label class="form-label small fw-semibold">Nama Lengkap &amp; Gelar</label>
-                          <input type="text" class="form-control" name="bendahara_nama" id="inpBendaharaNama" value="<?= html_escape($setting['bendahara_nama']) ?>" placeholder="Contoh: SITI NURHALIZA, S.Ak." required>
+                          <input type="text" class="form-control" name="verifikator_nama" id="inpverifikatorNama" value="<?= html_escape($setting['verifikator_nama']) ?>" placeholder="Contoh: SITI NURHALIZA, S.Ak." required>
                         </div>
                         <div class="col-12 col-md-6">
                           <label class="form-label small fw-semibold">Pangkat / Golongan</label>
-                          <input type="text" class="form-control" name="bendahara_pangkat" id="inpBendaharaPangkat" value="<?= html_escape($setting['bendahara_pangkat']) ?>" placeholder="Contoh: Penata Muda Tk. I (III/b)">
+                          <input type="text" class="form-control" name="verifikator_pangkat" id="inpverifikatorPangkat" value="<?= html_escape($setting['verifikator_pangkat']) ?>" placeholder="Contoh: Penata Muda Tk. I (III/b)">
                         </div>
                         <div class="col-12">
                           <label class="form-label small fw-semibold">NIP (Nomor Induk Pegawai)</label>
-                          <input type="text" class="form-control" name="bendahara_nip" id="inpBendaharaNip" value="<?= html_escape($setting['bendahara_nip']) ?>" placeholder="Contoh: 19881120 201101 2 004">
+                          <input type="text" class="form-control" name="verifikator_nip" id="inpverifikatorNip" value="<?= html_escape($setting['verifikator_nip']) ?>" placeholder="Contoh: 19881120 201101 2 004">
                         </div>
                       </div>
                     </div>
@@ -282,11 +282,11 @@ $(function(){
     var pptkPangkat = $('#inpPptkPangkat').val() || '';
     var pptkNip = $('#inpPptkNip').val() || '-';
 
-    var benNama = $('#inpBendaharaNama').val() || '-';
-    var benPangkat = $('#inpBendaharaPangkat').val() || '';
-    var benNip = $('#inpBendaharaNip').val() || '-';
+    var benNama = $('#inpverifikatorNama').val() || '-';
+    var benPangkat = $('#inpverifikatorPangkat').val() || '';
+    var benNip = $('#inpverifikatorNip').val() || '-';
 
-    // Kolom 1 PPTK dan kolom 2 Bendahara Pengeluaran
+    // Kolom 1 PPTK dan kolom 2 verifikator Pengeluaran
     var ttdCols = $('#previewTtdContainer .tanda-tangan-block .col-6');
     ttdCols.eq(0).find('strong.text-decoration-underline').text(pptkNama);
     ttdCols.eq(0).find('span:contains("NIP")').text('NIP. ' + pptkNip);

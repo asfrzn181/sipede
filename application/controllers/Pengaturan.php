@@ -61,12 +61,12 @@ class Pengaturan extends MY_Controller
             'pptk_nip'          => trim((string)$this->input->post('pptk_nip', TRUE)),
             'pptk_pangkat'      => trim((string)$this->input->post('pptk_pangkat', TRUE)),
 
-            // Penandatangan 2: Bendahara Pengeluaran
-            'bendahara_label'   => trim((string)$this->input->post('bendahara_label', TRUE)),
-            'bendahara_jabatan' => trim((string)$this->input->post('bendahara_jabatan', TRUE)),
-            'bendahara_nama'    => trim((string)$this->input->post('bendahara_nama', TRUE)),
-            'bendahara_nip'     => trim((string)$this->input->post('bendahara_nip', TRUE)),
-            'bendahara_pangkat' => trim((string)$this->input->post('bendahara_pangkat', TRUE)),
+            // Penandatangan 2: verifikator Pengeluaran
+            'verifikator_label'   => trim((string)$this->input->post('verifikator_label', TRUE)),
+            'verifikator_jabatan' => trim((string)$this->input->post('verifikator_jabatan', TRUE)),
+            'verifikator_nama'    => trim((string)$this->input->post('verifikator_nama', TRUE)),
+            'verifikator_nip'     => trim((string)$this->input->post('verifikator_nip', TRUE)),
+            'verifikator_pangkat' => trim((string)$this->input->post('verifikator_pangkat', TRUE)),
         );
 
         if (empty($data['nama_skpd'])) {

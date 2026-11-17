@@ -94,7 +94,7 @@ SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.kode IN (
   'penerima.view', 'penerima.manage',
   'jenis_biaya.view', 'jenis_biaya.manage',
   'anggaran.view_all', 'anggaran.manage',
-  'kegiatan.view_all', 'kegiatan.create', 'kegiatan.update', 'kegiatan.cancel',
+  'kegiatan.view_all', 'kegiatan.create', 'kegiatan.update', 'kegiatan.verify', 'kegiatan.cancel',
   'laporan.view_all', 'laporan.export',
   'user.view', 'user.manage',
   'role.manage',
@@ -220,7 +220,7 @@ INSERT INTO `pengaturan_dokumen` (
   `id`, `nama_pemda`, `nama_lembaga`, `nama_skpd`, `alamat`, 
   `telepon`, `fax`, `email`, `website`, `kode_pos`, `logo_path`, `kota_penetapan`,
   `pptk_label`, `pptk_jabatan`, `pptk_nama`, `pptk_nip`, `pptk_pangkat`,
-  `bendahara_label`, `bendahara_jabatan`, `bendahara_nama`, `bendahara_nip`, `bendahara_pangkat`
+  `verifikator_label`, `verifikator_jabatan`, `verifikator_nama`, `verifikator_nip`, `verifikator_pangkat`
 ) VALUES (
   1,
   'PEMERINTAH DAERAH PROVINSI / KABUPATEN',
@@ -239,8 +239,8 @@ INSERT INTO `pengaturan_dokumen` (
   'BAMBANG SUSANTO, S.E., M.M.',
   '19820415 200501 1 008',
   'Penata Tk. I (III/d)',
-  'Bendahara Pengeluaran',
-  'Bendahara Pengeluaran',
+  'verifikator Pengeluaran',
+  'verifikator Pengeluaran',
   'SITI NURHALIZA, S.Ak.',
   '19881120 201101 2 004',
   'Penata Muda Tk. I (III/b)'
