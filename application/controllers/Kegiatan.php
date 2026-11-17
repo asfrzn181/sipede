@@ -747,7 +747,7 @@ class Kegiatan extends MY_Controller
                     . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-sm btn-outline-primary" title="Lihat rincian"><i class="bi bi-eye"></i></a>'
                     . '</div>';
             } else {
-                $pengajuHtml = '<div><span class="badge text-bg-light border">User #' . (int)$row['diajukan_oleh'] . '</span></div>';
+                $pengajuHtml = '<div><span class="badge text-bg-light border">' . html_escape($row['pengaju_nama'] ?: ('User #' . (int)$row['diajukan_oleh'])) . '</span></div>';
                 $aksiHtml = '<div class="text-end text-nowrap">'
                     . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm me-1" title="Periksa Rincian & Verifikasi"><i class="bi bi-search"></i> <span>Periksa Rincian</span></a>'
                     . '<button class="btn btn-sm btn-success js-verify me-1" data-id="' . $encId . '" data-nama="' . $nama . '" title="Setujui Langsung"><i class="bi bi-check-lg"></i></button>'

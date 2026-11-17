@@ -130,12 +130,13 @@ class Kegiatan_model extends CI_Model {
         string $orderCol = 'k.tanggal_mulai',
         string $orderDir = 'DESC'
     ): array {
-        $this->db->select('k.*, ta.tahun AS tahun_anggaran, COUNT(DISTINCT kp.id) AS total_peserta, GROUP_CONCAT(DISTINCT p.nama ORDER BY p.tipe, p.nama SEPARATOR ", ") AS peserta, u.nama AS dibuat_oleh_nama', FALSE)
+        $this->db->select('k.*, ta.tahun AS tahun_anggaran, COUNT(DISTINCT kp.id) AS total_peserta, GROUP_CONCAT(DISTINCT p.nama ORDER BY p.tipe, p.nama SEPARATOR ", ") AS peserta, u.nama AS dibuat_oleh_nama, u2.nama AS pengaju_nama', FALSE)
             ->from('kegiatan k')
             ->join('tahun_anggaran ta', 'ta.id = k.tahun_anggaran_id', 'left')
             ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id', 'left')
             ->join('penerima p', 'p.id = kp.penerima_id', 'left')
-            ->join('users u', 'u.id = k.created_by', 'left');
+            ->join('users u', 'u.id = k.created_by', 'left')
+            ->join('users u2', 'u2.id = k.diajukan_oleh', 'left');
 
         if ($scope === 'own' && ($ownId || $ownPendampingId)) {
             $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'left');
