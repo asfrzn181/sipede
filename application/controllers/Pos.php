@@ -372,12 +372,19 @@ class Pos extends MY_Controller
      */
     public function pos_default(): void {
         $this->require_any(['kegiatan.create', 'kegiatan.update']);
-        $penerimaId = decrypt_id($this->input->get('penerima_id'));
+        $rawPenerima = $this->input->get('penerima_id');
+        $penerimaId = 0;
+        $pendampingId = 0;
+        if (is_string($rawPenerima) && strpos($rawPenerima, 'pend_') === 0) {
+            $pendampingId = (int)substr($rawPenerima, 5);
+        } else {
+            $penerimaId = decrypt_id($rawPenerima) ?: (int)$rawPenerima;
+        }
         $tahunId    = (int)($this->input->get('tahun_id') ?: $this->session->userdata('tahun_aktif_id'));
 
-        if (!$penerimaId) $this->respond(false, 'ID Penerima tidak valid.', [], [], 422);
+        if (!$penerimaId && !$pendampingId) $this->respond(false, 'ID Penerima tidak valid.', [], [], 422);
 
-        $pos   = $this->Pos_model->pos_default_penerima($penerimaId, $tahunId);
+        $pos   = $this->Pos_model->pos_default_penerima($penerimaId, $tahunId, $pendampingId);
         $saldo = $pos ? $this->Pos_model->saldo_pos((int)$pos['id']) : null;
 
         $this->respond(true, 'OK', [
