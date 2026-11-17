@@ -34,8 +34,10 @@ $rows = $detail['rows'] ?? array();
             <?php
               if ($row['tipe'] === 'DPRD') {
                   $labelTampil = $row['nama'] . ' — ' . ($row['jabatan'] ?: 'Anggota DPRD') . ' (DPRD)';
+              } elseif (!empty($row['pos_nama'])) {
+                  $labelTampil = $row['pos_nama'];
               } else {
-                  $labelTampil = !empty($row['pos_nama']) ? $row['pos_nama'] : ($row['jabatan'] ?: 'Pendamping');
+                  $labelTampil = $row['nama'] . ' — ' . ($row['jabatan'] ?: 'Pendamping') . ' (PENDAMPING)';
               }
             ?>
             <option value="<?= (int)$row['id'] ?>" <?= (int)$row['id'] === (int)$penerimaId ? 'selected' : '' ?>><?= html_escape($labelTampil) ?></option>
