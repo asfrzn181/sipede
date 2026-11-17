@@ -720,6 +720,7 @@ class Kegiatan extends MY_Controller
             $filter,
             'all',
             null,
+            null,
             $params['start'],
             $params['length'],
             $params['search'],
