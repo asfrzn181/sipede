@@ -63,9 +63,9 @@ $(function(){
     ajax: { url: window.APP.baseUrl + 'pendamping/data' },
     order: [[0, 'asc']],
     columnDefs: [
-      { targets: [2], className: 'text-center' }
+      { targets: [1], className: 'text-center' }
       <?php if($can_manage): ?>
-      , { targets: [3], className: 'text-end', orderable: false }
+      , { targets: [2], className: 'text-end', orderable: false }
       <?php endif; ?>
     ]
   });
