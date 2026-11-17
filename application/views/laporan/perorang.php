@@ -32,12 +32,13 @@ $rows = $detail['rows'] ?? array();
         <select name="penerima_id" class="form-select select2-perorang" id="selectPenerimaPerorang">
           <?php foreach($penerima as $row): ?>
             <?php
-              $labelJabatan = $row['jabatan'] ?: ($row['tipe'] === 'DPRD' ? 'Anggota DPRD' : 'Pendamping');
-              if ($row['tipe'] !== 'DPRD' && !empty($row['pos_nama'])) {
-                  $labelJabatan = $row['pos_nama'];
+              if ($row['tipe'] === 'DPRD') {
+                  $labelTampil = $row['nama'] . ' — ' . ($row['jabatan'] ?: 'Anggota DPRD') . ' (DPRD)';
+              } else {
+                  $labelTampil = !empty($row['pos_nama']) ? $row['pos_nama'] : ($row['jabatan'] ?: 'Pendamping');
               }
             ?>
-            <option value="<?= (int)$row['id'] ?>" <?= (int)$row['id'] === (int)$penerimaId ? 'selected' : '' ?>><?= html_escape($row['nama']) ?> — <?= html_escape($labelJabatan) ?> (<?= html_escape($row['tipe']) ?>)</option>
+            <option value="<?= (int)$row['id'] ?>" <?= (int)$row['id'] === (int)$penerimaId ? 'selected' : '' ?>><?= html_escape($labelTampil) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
