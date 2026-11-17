@@ -68,7 +68,7 @@ class Kegiatan_model extends CI_Model {
 
     private function build_kegiatan_filter(array $filter = array(), ?string $scope = 'all', ?int $ownId = null, ?int $ownPendampingId = null, string $search = ''): void {
         if ($scope === 'own' && ($ownId || $ownPendampingId)) {
-            $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'inner');
+            $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'left');
             $this->db->group_start();
             if ($ownId) $this->db->where('kp_own.penerima_id', $ownId);
             if ($ownPendampingId) {
@@ -138,7 +138,7 @@ class Kegiatan_model extends CI_Model {
             ->join('users u', 'u.id = k.created_by', 'left');
 
         if ($scope === 'own' && ($ownId || $ownPendampingId)) {
-            $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'inner');
+            $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'left');
             $this->db->group_start();
             if ($ownId) $this->db->where('kp_own.penerima_id', $ownId);
             if ($ownPendampingId) {
