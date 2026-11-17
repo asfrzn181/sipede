@@ -506,11 +506,11 @@
           <div class="row g-3 mb-4">
             <div class="col-12 col-md-6">
               <label class="form-label small fw-bold">Pilih Peserta (Anggota DPRD / ASN Pendamping) <span class="text-danger">*</span></label>
-              <select class="form-select select2-peserta" name="penerima_id" id="penerimaSelect" required <?= !empty($is_own_scope) ? 'data-own-only="1"' : '' ?>>
+              <select class="form-select select2-peserta" name="penerima_id" id="penerimaSelect" required>
                 <option value="">-- Pilih Anggota DPRD / ASN Pendamping --</option>
                 <optgroup label="Anggota DPRD">
                   <?php foreach($penerima as $p): ?>
-                    <?php if($p['tipe'] === 'DPRD' && empty($is_own_scope)): ?>
+                    <?php if($p['tipe'] === 'DPRD'): ?>
                     <option value="<?= encrypt_id($p['id']) ?>" data-tipe="DPRD">
                       <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'Anggota') ?> (DPRD)
                     </option>
@@ -519,7 +519,7 @@
                 </optgroup>
                 <optgroup label="Pendamping / ASN">
                   <?php foreach($penerima as $p): ?>
-                    <?php if($p['tipe'] !== 'DPRD' && (!$is_own_scope || (int)$p['id'] === (int)($currentUser['penerima_id'] ?? 0))): ?>
+                    <?php if($p['tipe'] !== 'DPRD'): ?>
                     <option value="<?= encrypt_id($p['id']) ?>" data-tipe="PENDAMPING">
                       <?= html_escape($p['nama']) ?> — <?= html_escape($p['jabatan'] ?: 'ASN Pendamping') ?> (PENDAMPING)
                     </option>
