@@ -525,6 +525,11 @@
                     </option>
                     <?php endif; ?>
                   <?php endforeach; ?>
+                  <?php foreach(($pendamping ?? array()) as $pd): ?>
+                    <option value="pend_<?= (int)$pd['id'] ?>" data-tipe="PENDAMPING">
+                      <?= html_escape($pd['nama']) ?> — <?= html_escape($pd['jabatan'] ?: 'Pendamping') ?> (PENDAMPING)
+                    </option>
+                  <?php endforeach; ?>
                 </optgroup>
               </select>
             </div>

@@ -76,14 +76,12 @@
         <thead class="table-light text-center align-middle" style="border-color: #000;">
           <tr>
             <th style="width: 35px;">No</th>
-            <th>Nama Pelaksana / NIP</th>
-            <th style="width: 90px;">Kategori</th>
+            <th>Nama</th>
             <th>Jabatan</th>
             <th>Beban Pos Anggaran</th>
-            <th>Rincian Biaya</th>
             <th style="width: 125px;" class="text-end">Dana Awal</th>
-            <th style="width: 125px;" class="text-end">Realisasi Nota</th>
-            <th style="width: 125px;" class="text-end">Selisih</th>
+            <th style="width: 125px;" class="text-end">Realisasi</th>
+            <th>Rincian Biaya</th>
           </tr>
         </thead>
         <tbody>
@@ -98,11 +96,6 @@
               <td class="fw-bold text-dark">
                 <?= html_escape($p['nama']) ?>
               </td>
-              <td class="text-center">
-                <span class="badge border <?= $p['tipe'] === 'DPRD' ? 'text-bg-primary bg-opacity-10 text-primary border-primary' : 'text-bg-secondary bg-opacity-10 text-secondary border-secondary' ?>">
-                  <?= html_escape($p['tipe']) ?>
-                </span>
-              </td>
               <td><?= html_escape($p['jabatan'] ?: '-') ?></td>
               <td class="small">
                 <strong><?= html_escape($p['pos_nama'] ?: ($p['tipe'] === 'DPRD' ? 'Pos DPRD: ' . $p['nama'] : 'Master Anggaran Aktif')) ?></strong>
@@ -111,6 +104,12 @@
                     &bull; Keterangan: <?= html_escape($p['alasan_pengalihan']) ?>
                   </div>
                 <?php endif; ?>
+              </td>
+              <td class="text-end fw-bold text-primary">
+                <?= rupiah($p['dana_awal'] ?? 0) ?>
+              </td>
+              <td class="text-end fw-bold text-success">
+                <?= rupiah($p['realisasi_nota'] ?? $p['total_biaya']) ?>
               </td>
               <td>
                 <?php if(!empty($p['biaya'])): ?>
@@ -126,15 +125,6 @@
                 <?php else: ?>
                   <span class="text-muted italic">-</span>
                 <?php endif; ?>
-              </td>
-              <td class="text-end fw-bold text-primary">
-                <?= rupiah($p['dana_awal'] ?? 0) ?>
-              </td>
-              <td class="text-end fw-bold text-success">
-                <?= rupiah($p['realisasi_nota'] ?? $p['total_biaya']) ?>
-              </td>
-              <td class="text-end fw-bold <?= (($p['selisih_dana_awal'] ?? 0) < 0) ? 'text-danger' : 'text-dark' ?>">
-                <?= rupiah($p['selisih_dana_awal'] ?? ((float)($p['dana_awal'] ?? 0) - (float)($p['total_biaya'] ?? 0))) ?>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -157,6 +147,12 @@
       <span class="fst-italic text-dark fw-semibold ms-1">"<?= html_escape($terbilang) ?>"</span>
     </div>
 
+    <!-- Input Verifikator (tidak ikut cetak) -->
+    <div class="d-print-none mb-3">
+      <label class="form-label small fw-semibold">Nama Verifikator (boleh dikosongkan)</label>
+      <input type="text" class="form-control form-control-sm" id="inpVerifikatorNama" value="<?= html_escape($setting['verifikator_nama'] ?? '') ?>" placeholder="Kosongkan jika tidak ingin menampilkan">
+    </div>
+
     <!-- Kolom Tanda Tangan Pengesahan Dinamis -->
     <?php $this->load->view('layout/tanda_tangan', array(
       'tanggal' => $kegiatan['tanggal_input'] ?? date('Y-m-d'),
@@ -174,6 +170,7 @@
 }
 
 @media print {
+  @page { size: 215mm 330mm; margin: 15mm; }
   body {
     background: #ffffff !important;
     color: #000000 !important;
@@ -205,4 +202,13 @@
   }
 }
 </style>
+
+<script>
+$(function(){
+  $('#inpVerifikatorNama').on('input', function(){
+    var val = $(this).val().trim();
+    $('#ttdVerifikatorNama').text(val !== '' ? val : '________________________');
+  });
+});
+</script>
 

@@ -38,7 +38,14 @@ class Kegiatan_model extends CI_Model {
     }
 
     public function belongs_to_penerima(int $id, ?int $penerimaId): bool {
-        return (bool)$penerimaId && $this->db->where(array('kegiatan_id' => $id, 'penerima_id' => $penerimaId))->count_all_results('kegiatan_peserta');
+        if ($penerimaId) {
+            return (bool)$this->db->where(array('kegiatan_id' => $id, 'penerima_id' => $penerimaId))->count_all_results('kegiatan_peserta');
+        }
+        return false;
+    }
+
+    public function belongs_to_pendamping(int $id, ?int $pendampingId): bool {
+        return (bool)$pendampingId && $this->db->where(array('kegiatan_id' => $id, 'pendamping_id' => $pendampingId))->count_all_results('kegiatan_peserta');
     }
 
     public function latest(int $limit = 10, ?string $scope = 'all', ?int $ownId = null): array {
@@ -50,10 +57,16 @@ class Kegiatan_model extends CI_Model {
         return $this->db->group_by('k.id')->order_by('k.created_at', 'DESC')->limit($limit)->get()->result_array();
     }
 
-    private function build_kegiatan_filter(array $filter = array(), ?string $scope = 'all', ?int $ownId = null, string $search = ''): void {
-        if ($scope === 'own' && $ownId) {
+    private function build_kegiatan_filter(array $filter = array(), ?string $scope = 'all', ?int $ownId = null, ?int $ownPendampingId = null, string $search = ''): void {
+        if ($scope === 'own' && ($ownId || $ownPendampingId)) {
             $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'inner');
-            $this->db->where('kp_own.penerima_id', $ownId);
+            $this->db->group_start();
+            if ($ownId) $this->db->where('kp_own.penerima_id', $ownId);
+            if ($ownPendampingId) {
+                if ($ownId) $this->db->or_where('kp_own.pendamping_id', $ownPendampingId);
+                else $this->db->where('kp_own.pendamping_id', $ownPendampingId);
+            }
+            $this->db->group_end();
         }
         if (!empty($filter['status'])) {
             $this->db->where('k.status', $filter['status']);
@@ -72,16 +85,16 @@ class Kegiatan_model extends CI_Model {
         }
     }
 
-    public function count_all(array $filter = array(), ?string $scope = 'all', ?int $ownId = null): int {
+    public function count_all(array $filter = array(), ?string $scope = 'all', ?int $ownId = null, ?int $ownPendampingId = null): int {
         $this->db->from('kegiatan k');
-        $this->build_kegiatan_filter($filter, $scope, $ownId, '');
+        $this->build_kegiatan_filter($filter, $scope, $ownId, $ownPendampingId, '');
         $row = $this->db->select('COUNT(DISTINCT k.id) AS cnt')->get()->row_array();
         return (int)($row['cnt'] ?? 0);
     }
 
-    public function count_filtered(array $filter = array(), ?string $scope = 'all', ?int $ownId = null, string $search = ''): int {
+    public function count_filtered(array $filter = array(), ?string $scope = 'all', ?int $ownId = null, ?int $ownPendampingId = null, string $search = ''): int {
         $this->db->from('kegiatan k');
-        $this->build_kegiatan_filter($filter, $scope, $ownId, $search);
+        $this->build_kegiatan_filter($filter, $scope, $ownId, $ownPendampingId, $search);
         $row = $this->db->select('COUNT(DISTINCT k.id) AS cnt')->get()->row_array();
         return (int)($row['cnt'] ?? 0);
     }
@@ -90,6 +103,7 @@ class Kegiatan_model extends CI_Model {
         array $filter = array(),
         ?string $scope = 'all',
         ?int $ownId = null,
+        ?int $ownPendampingId = null,
         int $start = 0,
         int $length = 10,
         string $search = '',
@@ -102,9 +116,15 @@ class Kegiatan_model extends CI_Model {
             ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id', 'left')
             ->join('penerima p', 'p.id = kp.penerima_id', 'left');
 
-        if ($scope === 'own' && $ownId) {
+        if ($scope === 'own' && ($ownId || $ownPendampingId)) {
             $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'inner');
-            $this->db->where('kp_own.penerima_id', $ownId);
+            $this->db->group_start();
+            if ($ownId) $this->db->where('kp_own.penerima_id', $ownId);
+            if ($ownPendampingId) {
+                if ($ownId) $this->db->or_where('kp_own.pendamping_id', $ownPendampingId);
+                else $this->db->where('kp_own.pendamping_id', $ownPendampingId);
+            }
+            $this->db->group_end();
         }
 
         if (!empty($filter['status'])) {
@@ -210,16 +230,21 @@ class Kegiatan_model extends CI_Model {
         $kegiatan['alokasi_anggaran'] = $this->get_alokasi_anggaran($id);
 
         // Ambil daftar peserta
-        $pesertaRows = $this->db->select('kp.*, p.nama, p.tipe, p.jabatan, p.periode_mulai, p.periode_akhir,
+        $pesertaRows = $this->db->select('kp.*,
+                                          COALESCE(p.nama, pd.nama) AS nama,
+                                          COALESCE(p.tipe, "PENDAMPING") AS tipe,
+                                          COALESCE(p.jabatan, pd.jabatan) AS jabatan,
+                                          p.periode_mulai, p.periode_akhir,
                                           sd.kode AS sumber_dana_kode, sd.nama AS sumber_dana_nama,
                                           pa.kode AS pos_kode, pa.nama AS pos_nama, pa.pagu AS pos_pagu', FALSE)
             ->from('kegiatan_peserta kp')
-            ->join('penerima p', 'p.id = kp.penerima_id')
+            ->join('penerima p', 'p.id = kp.penerima_id', 'left')
+            ->join('pendamping pd', 'pd.id = kp.pendamping_id', 'left')
             ->join('sumber_dana sd', 'sd.id = kp.sumber_dana_id', 'left')
             ->join('pos_anggaran pa', 'pa.id = kp.pos_anggaran_id', 'left')
             ->where('kp.kegiatan_id', $id)
-            ->order_by('p.tipe', 'ASC') // DPRD dulu baru Pendamping
-            ->order_by('p.nama', 'ASC')
+            ->order_by('tipe', 'ASC') // DPRD dulu baru Pendamping
+            ->order_by('nama', 'ASC')
             ->get()->result_array();
 
         $peserta = array();
@@ -261,7 +286,8 @@ class Kegiatan_model extends CI_Model {
      */
     public function save_peserta(int $kegiatanId, array $data): int {
         $kegiatanPesertaId = !empty($data['id']) ? (int)$data['id'] : 0;
-        $penerimaId        = (int)$data['penerima_id'];
+        $penerimaId        = !empty($data['penerima_id']) ? (int)$data['penerima_id'] : null;
+        $pendampingId      = !empty($data['pendamping_id']) ? (int)$data['pendamping_id'] : null;
         $posAnggaranId     = !empty($data['pos_anggaran_id']) ? (int)$data['pos_anggaran_id'] : null;
         $alasanPengalihan  = !empty($data['alasan_pengalihan']) ? trim((string)$data['alasan_pengalihan']) : null;
         $danaAwal          = max(0, (float)($data['dana_awal'] ?? 0));
@@ -271,6 +297,7 @@ class Kegiatan_model extends CI_Model {
         $kpData = array(
             'kegiatan_id'       => $kegiatanId,
             'penerima_id'       => $penerimaId,
+            'pendamping_id'     => $pendampingId,
             'pos_anggaran_id'   => $posAnggaranId,
             'kegiatan_anggaran_id' => $kegiatanAnggaranId,
             'alasan_pengalihan' => $alasanPengalihan,

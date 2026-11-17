@@ -16,6 +16,17 @@ DROP VIEW IF EXISTS `v_realisasi`;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `jabatan_dprd`;
+CREATE TABLE `jabatan_dprd` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `kode` VARCHAR(40) NOT NULL UNIQUE,
+  `nama` VARCHAR(120) NOT NULL,
+  `kelompok_jabatan` ENUM('KETUA','WAKIL_KETUA','ANGGOTA') NOT NULL DEFAULT 'ANGGOTA',
+  `urutan` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- -----------------------------------------------------------------------------
 -- 1. Tabel Session (CodeIgniter Database Session Driver)
 -- -----------------------------------------------------------------------------
@@ -81,13 +92,16 @@ CREATE TABLE `penerima` (
   `nama` VARCHAR(150) NOT NULL,
   `tipe` VARCHAR(30) NOT NULL, -- 'DPRD' / 'PENDAMPING'
   `jabatan` VARCHAR(80) NULL,
+  `jabatan_dprd_id` INT UNSIGNED NULL,
+  `kelompok_jabatan` ENUM('KETUA','WAKIL_KETUA','ANGGOTA') NULL,
   `periode_mulai` SMALLINT UNSIGNED NULL,
   `periode_akhir` SMALLINT UNSIGNED NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `idx_penerima_tipe` (`tipe`),
-  INDEX `idx_penerima_aktif` (`is_active`)
+  INDEX `idx_penerima_aktif` (`is_active`),
+  CONSTRAINT `fk_penerima_jabatan_dprd` FOREIGN KEY (`jabatan_dprd_id`) REFERENCES `jabatan_dprd` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `sumber_dana`;
@@ -172,7 +186,8 @@ CREATE TABLE `pos_anggaran` (
 CREATE TABLE `penugasan_pos` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `pos_anggaran_id` INT UNSIGNED NOT NULL,
-  `penerima_id` INT UNSIGNED NOT NULL,
+  `penerima_id` INT UNSIGNED NULL,
+  `pendamping_id` INT UNSIGNED NULL,
   `tanggal_mulai` DATE NOT NULL,
   `tanggal_selesai` DATE NULL,
   `keterangan` TEXT NULL,
@@ -183,7 +198,8 @@ CREATE TABLE `penugasan_pos` (
   INDEX `idx_penugasan_penerima` (`penerima_id`),
   INDEX `idx_penugasan_aktif` (`pos_anggaran_id`, `tanggal_selesai`),
   CONSTRAINT `fk_penugasan_pos` FOREIGN KEY (`pos_anggaran_id`) REFERENCES `pos_anggaran` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_penugasan_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_penugasan_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_penugasan_pendamping` FOREIGN KEY (`pendamping_id`) REFERENCES `pendamping` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `riwayat_pagu_pos` (
@@ -213,6 +229,7 @@ CREATE TABLE `users` (
   `nama` VARCHAR(150) NOT NULL,
   `role_id` INT UNSIGNED NOT NULL,
   `penerima_id` INT UNSIGNED NULL UNIQUE,
+  `pendamping_id` INT UNSIGNED NULL UNIQUE,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `wajib_ganti_password` TINYINT(1) NOT NULL DEFAULT 0,
   `terakhir_login` DATETIME NULL,
@@ -221,7 +238,8 @@ CREATE TABLE `users` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
-  CONSTRAINT `fk_user_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_user_penerima` FOREIGN KEY (`penerima_id`) REFERENCES `penerima` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_user_pendamping` FOREIGN KEY (`pendamping_id`) REFERENCES `pendamping` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
@@ -326,6 +344,7 @@ CREATE TABLE `kegiatan_peserta` (
   `sumber_dana_id` INT UNSIGNED NULL,
   `kegiatan_anggaran_id` INT UNSIGNED NULL,
   `pos_anggaran_id` INT UNSIGNED NULL,     -- Pos anggaran yang dibebani
+  `pendamping_id` INT UNSIGNED NULL,        -- Pendamping terpisah (jika bukan penerima)
   `alasan_pengalihan` TEXT NULL,           -- Keterangan sumber/pembebanan anggaran
   `dana_awal` DECIMAL(18,2) NOT NULL DEFAULT 0, -- Uang muka / panjar peserta
   PRIMARY KEY (`id`),
@@ -495,7 +514,7 @@ CREATE OR REPLACE VIEW `v_detail_biaya` AS
 SELECT
   k.id AS kegiatan_id, k.tahun_anggaran_id, k.nama_kegiatan, k.no_surat_tugas,
   k.tanggal_surat_tugas, k.tema, k.tanggal_input, k.tanggal_mulai, k.tanggal_selesai,
-  k.tempat, k.status, kp.penerima_id, p.nama AS penerima_nama, p.tipe, p.jabatan,
+  k.tempat, k.status, kp.penerima_id, kp.pendamping_id, p.nama AS penerima_nama, p.tipe, p.jabatan,
   COALESCE(ka.pos_anggaran_id, kp.pos_anggaran_id) AS pos_anggaran_id,
   COALESCE(pa.nama, sd.nama, 'APBD') AS sumber_dana_nama,
   kp.sumber_dana_id, sd.kode AS sumber_dana_kode,
@@ -514,7 +533,7 @@ UNION ALL
 SELECT
   k.id AS kegiatan_id, k.tahun_anggaran_id, k.nama_kegiatan, k.no_surat_tugas,
   k.tanggal_surat_tugas, k.tema, k.tanggal_input, k.tanggal_mulai, k.tanggal_selesai,
-  k.tempat, k.status, NULL AS penerima_id, 'Kegiatan Umum' AS penerima_nama,
+  k.tempat, k.status, NULL AS penerima_id, NULL AS pendamping_id, 'Kegiatan Umum' AS penerima_nama,
   NULL AS tipe, NULL AS jabatan, ka.pos_anggaran_id, pa.nama AS sumber_dana_nama,
   NULL AS sumber_dana_id, NULL AS sumber_dana_kode,
   j.id AS jenis_biaya_id, j.kode AS jenis_biaya_kode, j.nama AS jenis_biaya_nama,
@@ -525,6 +544,20 @@ JOIN kegiatan_anggaran ka ON ka.kegiatan_id = k.id
 JOIN kegiatan_biaya kb ON kb.kegiatan_anggaran_id = ka.id AND kb.kegiatan_peserta_id IS NULL
 JOIN pos_anggaran pa ON pa.id = ka.pos_anggaran_id
 JOIN jenis_biaya j ON j.id = kb.jenis_biaya_id;
+
+-- -----------------------------------------------------------------------------
+-- Tabel Pendamping Terpisah
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `pendamping`;
+CREATE TABLE `pendamping` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nama` VARCHAR(150) NOT NULL,
+  `jabatan` VARCHAR(80) NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_pendamping_aktif` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

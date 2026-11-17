@@ -42,6 +42,11 @@ $rows = $detail['rows'] ?? array();
               <option value="pos_<?= (int)$pos['id'] ?>" <?= ('pos_' . (int)$pos['id']) === $this->input->get('penerima_id') ? 'selected' : '' ?>><?= html_escape($pos['nama']) ?></option>
             <?php endforeach; ?>
           </optgroup>
+          <optgroup label="Pendamping (Master Terpisah)">
+            <?php foreach(($pendamping ?? array()) as $pd): ?>
+              <option value="pend_<?= (int)$pd['id'] ?>" <?= ('pend_' . (int)$pd['id']) === $this->input->get('penerima_id') ? 'selected' : '' ?>><?= html_escape($pd['nama']) ?> — <?= html_escape($pd['jabatan'] ?: 'Pendamping') ?></option>
+            <?php endforeach; ?>
+          </optgroup>
         </select>
       </div>
       <div class="col-12 col-md-3"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-search me-1"></i>Tampilkan</button></div>

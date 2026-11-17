@@ -47,6 +47,12 @@ class MY_Controller extends CI_Controller
         return $id ? (int)$id : null;
     }
 
+    protected function own_pendamping_id(): ?int
+    {
+        $id = $this->user['pendamping_id'] ?? null;
+        return $id ? (int)$id : null;
+    }
+
     protected function respond(bool $status, string $message, array $data = array(), array $errors = array(), int $code = 200): void
     {
         json_response($status, $message, $data, $errors, $code);

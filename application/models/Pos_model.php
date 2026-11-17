@@ -313,8 +313,10 @@ class Pos_model extends CI_Model {
         $tahunRow = $this->db->get_where('tahun_anggaran', ['id' => $tahunId])->row_array();
         $tahun = (int)($tahunRow['tahun'] ?? 0);
         $penerimaList = $this->db
-            ->where('tipe', 'DPRD')
-            ->where('is_active', 1)
+            ->select('p.*, jd.kelompok_jabatan AS jd_kelompok')
+            ->join('jabatan_dprd jd', 'jd.id = p.jabatan_dprd_id', 'left')
+            ->where('p.tipe', 'DPRD')
+            ->where('p.is_active', 1)
             ->group_start()
             ->where('periode_mulai IS NULL', null, false)
             ->or_where('periode_mulai <=', $tahun)
@@ -323,8 +325,8 @@ class Pos_model extends CI_Model {
             ->where('periode_akhir IS NULL', null, false)
             ->or_where('periode_akhir >=', $tahun)
             ->group_end()
-            ->order_by('nama')
-            ->get('penerima')->result_array();
+            ->order_by('p.nama')
+            ->get('penerima p')->result_array();
 
         $created = 0;
         foreach ($penerimaList as $i => $p) {
@@ -335,9 +337,15 @@ class Pos_model extends CI_Model {
             ])->row_array();
 
             if (!$existing) {
-                $jabatan   = strtolower($p['jabatan'] ?? '');
-                $kelompok  = strpos($jabatan, 'wakil ketua') !== false ? 'WAKIL_KETUA'
-                           : (strpos($jabatan, 'ketua') !== false ? 'KETUA' : 'ANGGOTA');
+                if (!empty($p['jd_kelompok'])) {
+                    $kelompok = $p['jd_kelompok'];
+                } elseif (!empty($p['kelompok_jabatan'])) {
+                    $kelompok = $p['kelompok_jabatan'];
+                } else {
+                    $jabatan   = strtolower($p['jabatan'] ?? '');
+                    $kelompok  = strpos($jabatan, 'wakil ketua') !== false ? 'WAKIL_KETUA'
+                               : (strpos($jabatan, 'ketua') !== false ? 'KETUA' : 'ANGGOTA');
+                }
 
                 $this->db->insert('pos_anggaran', [
                     'tahun_anggaran_id' => $tahunId,
@@ -494,6 +502,38 @@ class Pos_model extends CI_Model {
         return (int)$this->db->insert_id();
     }
 
+    public function terapkan_pagu_sekretariat(int $tahunId, float $pagu, bool $overwrite = false, ?int $oleh = null): int {
+        if ($pagu <= 0) return 0;
+
+        $this->db
+            ->where('tahun_anggaran_id', $tahunId)
+            ->where('is_active', 1)
+            ->like('nama', 'Sekretariat');
+
+        if (!$overwrite) {
+            $this->db->where('pagu', 0);
+        }
+
+        $rows = $this->db->get('pos_anggaran')->result_array();
+        $updated = 0;
+
+        foreach ($rows as $row) {
+            $sebelum = (float)$row['pagu'];
+            $isAwal = (float)($row['pagu_awal'] ?? 0) <= 0 && $sebelum <= 0;
+            $update = ['pagu' => $pagu, 'updated_at' => date('Y-m-d H:i:s')];
+            if ($isAwal) {
+                $update['pagu_awal'] = $pagu;
+                $update['pagu_awal_at'] = date('Y-m-d H:i:s');
+                $update['pagu_awal_oleh'] = $oleh;
+            }
+            $this->db->where('id', (int)$row['id'])->update('pos_anggaran', $update);
+            $this->catat_riwayat_pagu((int)$row['id'], $isAwal ? 'AWAL' : 'STANDAR', $sebelum, $pagu, 0, $isAwal, 'Terapkan pagu standar sekretariat', $oleh);
+            $updated++;
+        }
+
+        return $updated;
+    }
+
     public function sudah_memiliki_pagu_awal(int $posId): bool {
         $row = $this->db->select('pagu_awal')->get_where('pos_anggaran', ['id' => $posId])->row_array();
         if (!$row) return false;
@@ -573,10 +613,14 @@ class Pos_model extends CI_Model {
      * Pemegang aktif lain tetap dipertahankan karena satu pos dapat
      * digunakan oleh beberapa orang dengan satu pagu bersama.
      */
-    public function simpan_penugasan(int $posId, int $penerimaId, string $tanggalMulai, ?string $keterangan = null, ?int $dibuatOleh = null): int {
+    public function simpan_penugasan(int $posId, int $penerimaId, string $tanggalMulai, ?string $keterangan = null, ?int $dibuatOleh = null, ?int $pendampingId = null): int {
+        $this->db->where('pos_anggaran_id', $posId);
+        if ($pendampingId) {
+            $this->db->where('pendamping_id', $pendampingId);
+        } else {
+            $this->db->where('penerima_id', $penerimaId);
+        }
         $existing = $this->db
-            ->where('pos_anggaran_id', $posId)
-            ->where('penerima_id', $penerimaId)
             ->where('tanggal_selesai IS NULL', null, false)
             ->order_by('id', 'DESC')
             ->limit(1)
@@ -586,7 +630,8 @@ class Pos_model extends CI_Model {
         // Tambahkan pemegang baru tanpa menutup pemegang lain.
         $this->db->insert('penugasan_pos', [
             'pos_anggaran_id' => $posId,
-            'penerima_id'     => $penerimaId,
+            'penerima_id'     => $penerimaId ?: null,
+            'pendamping_id'   => $pendampingId,
             'tanggal_mulai'   => $tanggalMulai,
             'tanggal_selesai' => null,
             'keterangan'      => $keterangan,
@@ -601,7 +646,25 @@ class Pos_model extends CI_Model {
      * - DPRD: pos yang penerima_id = $penerimaId
      * - PENDAMPING: pos yang penugasan aktifnya adalah $penerimaId
      */
-    public function pos_default_penerima(int $penerimaId, int $tahunId): ?array {
+    public function pos_default_penerima(int $penerimaId, int $tahunId, ?int $pendampingId = null): ?array {
+        if ($pendampingId) {
+            $result = $this->db
+                ->select('pa.*')
+                ->from('pos_anggaran pa')
+                ->join('penugasan_pos pp', 'pp.pos_anggaran_id = pa.id')
+                ->where('pp.pendamping_id', $pendampingId)
+                ->where('pa.tahun_anggaran_id', $tahunId)
+                ->where('pa.tipe', 'PENDAMPING')
+                ->where('pa.is_active', 1)
+                ->where('pp.tanggal_selesai IS NULL', null, false)
+                ->limit(1)
+                ->get()->row_array();
+
+            return $result ?: null;
+        }
+
+        if (!$penerimaId) return null;
+
         // Cek tipe penerima
         $penerima = $this->db->get_where('penerima', ['id' => $penerimaId])->row_array();
         if (!$penerima) return null;

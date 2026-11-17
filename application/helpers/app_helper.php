@@ -51,6 +51,15 @@ function tgl_indo(?string $date): string
     return $time ? date('d-m-Y', $time) : '-';
 }
 
+function tgl_indo_panjang(?string $date): string
+{
+    if (!$date || $date === '0000-00-00') return '-';
+    $time = strtotime($date);
+    if (!$time) return '-';
+    $bulan = array(1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
+    return (int)date('j', $time) . ' ' . $bulan[(int)date('n', $time)] . ' ' . date('Y', $time);
+}
+
 function json_response(bool $status, string $message, array $data = array(), array $errors = array(), int $code = 200): void
 {
     $CI =& get_instance();

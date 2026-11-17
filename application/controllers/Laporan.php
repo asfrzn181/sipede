@@ -10,7 +10,7 @@ class Laporan extends MY_Controller
     {
         parent::__construct();
         $this->require_login();
-        $this->load->model(array('Laporan_model', 'Penerima_model', 'Jenis_biaya_model', 'Tahun_model', 'Pos_model'));
+        $this->load->model(array('Laporan_model', 'Penerima_model', 'Pendamping_model', 'Jenis_biaya_model', 'Tahun_model', 'Pos_model'));
     }
 
     public function index(): void
@@ -114,11 +114,15 @@ class Laporan extends MY_Controller
         list($tahunList, $tahunId, $tahunLabel) = $this->tahun_laporan();
         $penerima = $this->Penerima_model->all_active((int)$tahunLabel);
         $posPendamping = $this->Pos_model->all_by_tahun($tahunId, 'PENDAMPING');
+        $pendamping = $this->Pendamping_model->all();
         $rawTarget = $this->input->get('penerima_id');
         $penerimaId = 0;
         $posId = 0;
+        $pendampingId = 0;
         if (is_string($rawTarget) && strpos($rawTarget, 'pos_') === 0) {
             $posId = (int)substr($rawTarget, 4);
+        } elseif (is_string($rawTarget) && strpos($rawTarget, 'pend_') === 0) {
+            $pendampingId = (int)substr($rawTarget, 5);
         } else {
             $penerimaId = (int)$rawTarget;
         }
@@ -130,17 +134,19 @@ class Laporan extends MY_Controller
 
         if ($posId) {
             $detail = $this->Laporan_model->detail_perorang_pos($tahunId, $posId);
+        } elseif ($pendampingId) {
+            $detail = $this->Laporan_model->detail_perorang_pendamping($tahunId, $pendampingId);
         } else {
             $detail = $penerimaId ? $this->Laporan_model->detail_perorang($tahunId, $penerimaId) : array();
         }
 
-        return array($tahunList, $tahunId, $tahunLabel, $penerima, $posPendamping, $penerimaId, $posId, $detail);
+        return array($tahunList, $tahunId, $tahunLabel, $penerima, $posPendamping, $pendamping, $penerimaId, $posId, $pendampingId, $detail);
     }
 
     public function perorang(): void
     {
         $this->require_any(array('laporan.view_all', 'laporan.view_own'));
-        list($tahunList, $tahunId, $tahunLabel, $penerima, $posPendamping, $penerimaId, $posId, $detail) = $this->perorang_context();
+        list($tahunList, $tahunId, $tahunLabel, $penerima, $posPendamping, $pendamping, $penerimaId, $posId, $pendampingId, $detail) = $this->perorang_context();
         $this->load->view('layout/main', array(
             'title' => 'Laporan Per Orang',
             'view'  => 'laporan/perorang',
@@ -150,8 +156,10 @@ class Laporan extends MY_Controller
                 'tahunLabel' => $tahunLabel,
                 'penerima' => $penerima,
                 'posPendamping' => $posPendamping,
+                'pendamping' => $pendamping,
                 'penerimaId' => $penerimaId,
                 'posId' => $posId,
+                'pendampingId' => $pendampingId,
                 'detail' => $detail,
                 'can_export' => can('laporan.export'),
             )
@@ -167,8 +175,9 @@ class Laporan extends MY_Controller
         $components = $detail['components'];
         $lastColumn = 8 + count($components);
         $sheet = (new Spreadsheet())->getActiveSheet();
-        $sheet->mergeCellsByColumnAndRow(1, 1, $lastColumn, 1);
-        $sheet->mergeCellsByColumnAndRow(1, 2, $lastColumn, 2);
+        $lastColumnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastColumn);
+        $sheet->mergeCells('A1:' . $lastColumnLetter . '1');
+        $sheet->mergeCells('A2:' . $lastColumnLetter . '2');
         $sheet->setCellValueByColumnAndRow(1, 1, 'REKAPITULASI BELANJA PERJALANAN DINAS');
         $sheet->setCellValueByColumnAndRow(1, 2, 'PIMPINAN DAN ANGGOTA DPRD TAHUN ' . $tahunLabel);
         $sheet->setCellValue('A4', 'ANGGARAN');
@@ -281,7 +290,11 @@ class Laporan extends MY_Controller
         );
 
         if ($this->rbac->scope('laporan') === 'own') {
-            $filter['penerima_id'] = array($this->own_penerima_id());
+            if ($this->own_penerima_id()) {
+                $filter['penerima_id'] = array($this->own_penerima_id());
+            } elseif ($this->own_pendamping_id()) {
+                $filter['pendamping_id'] = array($this->own_pendamping_id());
+            }
         }
 
         return $filter;

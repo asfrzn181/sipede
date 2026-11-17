@@ -37,6 +37,12 @@ class Laporan_model extends CI_Model
                 $this->db->where_in('d.penerima_id', $pIds);
             }
         }
+        if (!empty($filter['pendamping_id'])) {
+            $pdIds = array_filter(array_map('intval', (array)$filter['pendamping_id']));
+            if (!empty($pdIds)) {
+                $this->db->where_in('d.pendamping_id', $pdIds);
+            }
+        }
         if (!empty($filter['jenis_biaya_id'])) {
             $jIds = array_filter(array_map('intval', (array)$filter['jenis_biaya_id']));
             if (!empty($jIds)) {
@@ -144,6 +150,131 @@ class Laporan_model extends CI_Model
             ->select('k.id AS kegiatan_id, k.nama_kegiatan, k.no_surat_tugas, k.tanggal_mulai, k.tanggal_selesai,
                       k.tema, k.tempat, k.status, kb.jenis_biaya_id, jb.kode AS jenis_biaya_kode,
                       jb.nama AS jenis_biaya_nama, kb.keterangan, kb.volume, kb.tarif,
+                      p.nama AS penerima_nama,
+                      COALESCE(sd.nama, ja.nama, "-") AS sumber_dana_nama,
+                      (kb.volume * kb.tarif) AS subtotal', FALSE)
+            ->from('kegiatan k')
+            ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id')
+            ->join('penerima p', 'p.id = kp.penerima_id', 'left')
+            ->join('kegiatan_biaya kb', 'kb.kegiatan_peserta_id = kp.id')
+            ->join('jenis_biaya jb', 'jb.id = kb.jenis_biaya_id')
+            ->join('sumber_dana sd', 'sd.id = kp.sumber_dana_id', 'left')
+            ->join('pos_anggaran pa', 'pa.id = kp.pos_anggaran_id', 'left')
+            ->join('jenis_anggaran ja', 'ja.id = pa.jenis_anggaran_id', 'left')
+            ->where('k.tahun_anggaran_id', $tahunId)
+            ->where('kp.pos_anggaran_id', $posId)
+            ->where('k.status', 'AKTIF')
+            ->order_by('k.tanggal_mulai', 'ASC')
+            ->order_by('k.id', 'ASC')
+            ->get()->result_array();
+
+        $componentMap = array();
+        foreach ($componentRows as $component) {
+            $component['total'] = 0.0;
+            $componentMap[(int)$component['id']] = $component;
+        }
+
+        $groups = array();
+        foreach ($raw as $row) {
+            $key = (int)$row['kegiatan_id'];
+            if (!isset($groups[$key])) {
+                $groups[$key] = array(
+                    'kegiatan_id' => $key,
+                    'no_surat_tugas' => $row['no_surat_tugas'],
+                    'nama_kegiatan' => $row['nama_kegiatan'],
+                    'tema' => $row['tema'],
+                    'tempat' => $row['tempat'],
+                    'tanggal_mulai' => $row['tanggal_mulai'],
+                    'tanggal_selesai' => $row['tanggal_selesai'],
+                    'status' => $row['status'],
+                    'sumber_dana' => array(),
+                    'komponen' => array(),
+                    'keterangan' => array(),
+                    'pendamping' => array(),
+                    'total' => 0.0,
+                );
+            }
+
+            $jenisId = (int)$row['jenis_biaya_id'];
+            $subtotal = (float)$row['subtotal'];
+            $groups[$key]['komponen'][$jenisId] = ($groups[$key]['komponen'][$jenisId] ?? 0) + $subtotal;
+            $groups[$key]['total'] += $subtotal;
+            if (!empty($row['keterangan'])) $groups[$key]['keterangan'][] = trim((string)$row['keterangan']);
+            if (isset($row['penerima_nama']) && !empty($row['penerima_nama'])) $groups[$key]['pendamping'][] = trim((string)$row['penerima_nama']);
+            if (!empty($row['sumber_dana_nama']) && $row['sumber_dana_nama'] !== '-') $groups[$key]['sumber_dana'][] = trim((string)$row['sumber_dana_nama']);
+            if (isset($componentMap[$jenisId])) $componentMap[$jenisId]['total'] += $subtotal;
+        }
+
+        $komponenBaku = array('UANG_HARIAN', 'UANG_REPRESENTATIF', 'PENGINAPAN', 'TRANSPORT');
+        $componentMap = array_filter($componentMap, function ($component) use ($komponenBaku) {
+            return in_array($component['kode'], $komponenBaku, true) || (float)$component['total'] > 0;
+        });
+
+        $totalPagu = (float)$pos['pagu'];
+        $cumulative = 0.0;
+        $detail = array_values($groups);
+        foreach ($detail as &$row) {
+            $cumulative += (float)$row['total'];
+            $row['sisa'] = $totalPagu - $cumulative;
+            $keterangan = implode(' | ', array_unique($row['keterangan']));
+            $pendamping = implode(', ', array_unique($row['pendamping']));
+            if ($pendamping !== '') {
+                $keterangan = trim($keterangan . ' | Pendamping: ' . $pendamping, ' |');
+            }
+            $row['keterangan'] = $keterangan;
+            $row['sumber_dana'] = implode(' | ', array_unique($row['sumber_dana']));
+        }
+        unset($row);
+
+        return array(
+            'person' => $person,
+            'pagu_breakdown' => $paguRows,
+            'total_pagu' => $totalPagu,
+            'components' => array_values($componentMap),
+            'rows' => $detail,
+            'total_realisasi' => $cumulative,
+            'sisa' => $totalPagu - $cumulative,
+        );
+    }
+
+    /** Detail belanja per pendamping terpisah pada satu tahun. */
+    public function detail_perorang_pendamping(int $tahunId, int $pendampingId): array
+    {
+        $pendamping = $this->db->get_where('pendamping', array('id' => $pendampingId))->row_array();
+        if (!$pendamping) return array();
+
+        $person = array('id' => $pendampingId, 'nama' => $pendamping['nama'], 'jabatan' => $pendamping['jabatan'], 'tipe' => 'PENDAMPING');
+
+        $paguRows = $this->db
+            ->select('COALESCE(ja.nama, "Belum dikategorikan") AS nama, COALESCE(SUM(pa.pagu), 0) AS pagu', FALSE)
+            ->from('pos_anggaran pa')
+            ->join('jenis_anggaran ja', 'ja.id = pa.jenis_anggaran_id', 'left')
+            ->where('pa.tahun_anggaran_id', $tahunId)
+            ->where('pa.is_active', 1)
+            ->where('pa.tipe', 'PENDAMPING')
+            ->group_start()
+                ->where("EXISTS (SELECT 1 FROM penugasan_pos pp WHERE pp.pos_anggaran_id = pa.id AND pp.penerima_id IS NULL)", null, false)
+            ->group_end()
+            ->group_by('pa.jenis_anggaran_id, ja.nama')
+            ->order_by('ja.urutan', 'ASC')
+            ->get()->result_array();
+
+        // Jika tidak ada pos khusus, fallback ke semua pos pendamping
+        if (empty($paguRows)) {
+            $paguRows = array(array('nama' => 'Perjalanan Dinas', 'pagu' => 0.0));
+        }
+
+        $componentRows = $this->db
+            ->select('id, kode, nama, satuan')
+            ->where('is_active', 1)
+            ->order_by("FIELD(kode, 'UANG_HARIAN', 'UANG_REPRESENTATIF', 'PENGINAPAN', 'TRANSPORT')", '', FALSE)
+            ->order_by('nama', 'ASC')
+            ->get('jenis_biaya')->result_array();
+
+        $raw = $this->db
+            ->select('k.id AS kegiatan_id, k.nama_kegiatan, k.no_surat_tugas, k.tanggal_mulai, k.tanggal_selesai,
+                      k.tema, k.tempat, k.status, kb.jenis_biaya_id, jb.kode AS jenis_biaya_kode,
+                      jb.nama AS jenis_biaya_nama, kb.keterangan, kb.volume, kb.tarif,
                       COALESCE(sd.nama, ja.nama, "-") AS sumber_dana_nama,
                       (kb.volume * kb.tarif) AS subtotal', FALSE)
             ->from('kegiatan k')
@@ -154,7 +285,7 @@ class Laporan_model extends CI_Model
             ->join('pos_anggaran pa', 'pa.id = kp.pos_anggaran_id', 'left')
             ->join('jenis_anggaran ja', 'ja.id = pa.jenis_anggaran_id', 'left')
             ->where('k.tahun_anggaran_id', $tahunId)
-            ->where('kp.pos_anggaran_id', $posId)
+            ->where('kp.pendamping_id', $pendampingId)
             ->where('k.status', 'AKTIF')
             ->order_by('k.tanggal_mulai', 'ASC')
             ->order_by('k.id', 'ASC')
@@ -200,7 +331,13 @@ class Laporan_model extends CI_Model
             return in_array($component['kode'], $komponenBaku, true) || (float)$component['total'] > 0;
         });
 
-        $totalPagu = (float)$pos['pagu'];
+        $totalPagu = 0.0;
+        foreach ($paguRows as &$pagu) {
+            $pagu['pagu'] = (float)$pagu['pagu'];
+            $totalPagu += $pagu['pagu'];
+        }
+        unset($pagu);
+
         $cumulative = 0.0;
         $detail = array_values($groups);
         foreach ($detail as &$row) {
@@ -436,6 +573,7 @@ class Laporan_model extends CI_Model
                     'sumber_dana' => array(),
                     'komponen' => array(),
                     'keterangan' => array(),
+                    'pendamping' => array(),
                     'total' => 0.0,
                 );
             }
@@ -445,6 +583,7 @@ class Laporan_model extends CI_Model
             $groups[$key]['komponen'][$jenisId] = ($groups[$key]['komponen'][$jenisId] ?? 0) + $subtotal;
             $groups[$key]['total'] += $subtotal;
             if (!empty($row['keterangan'])) $groups[$key]['keterangan'][] = trim((string)$row['keterangan']);
+            if (isset($row['penerima_nama']) && !empty($row['penerima_nama'])) $groups[$key]['pendamping'][] = trim((string)$row['penerima_nama']);
             if (!empty($row['sumber_dana_nama']) && $row['sumber_dana_nama'] !== '-') $groups[$key]['sumber_dana'][] = trim((string)$row['sumber_dana_nama']);
             if (isset($componentMap[$jenisId])) $componentMap[$jenisId]['total'] += $subtotal;
         }

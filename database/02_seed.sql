@@ -246,6 +246,15 @@ INSERT INTO `pengaturan_dokumen` (
   'Penata Muda Tk. I (III/b)'
 ) ON DUPLICATE KEY UPDATE `id` = 1;
 
+-- Master Jabatan DPRD
+INSERT INTO `jabatan_dprd` (`kode`, `nama`, `kelompok_jabatan`, `urutan`, `is_active`) VALUES
+('KETUA_DPRD', 'Ketua DPRD', 'KETUA', 1, 1),
+('WAKIL_KETUA_1', 'Wakil Ketua I', 'WAKIL_KETUA', 2, 1),
+('WAKIL_KETUA_2', 'Wakil Ketua II', 'WAKIL_KETUA', 3, 1),
+('KETUA_KOMISI', 'Ketua Komisi', 'ANGGOTA', 4, 1),
+('ANGGOTA_DPRD', 'Anggota DPRD', 'ANGGOTA', 5, 1)
+ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `kelompok_jabatan` = VALUES(`kelompok_jabatan`), `is_active` = 1;
+
 -- Tahun Anggaran Berjalan (Tahun Aktif Pertama: 2026)
 INSERT INTO `tahun_anggaran` (`id`, `tahun`, `is_locked`) 
 VALUES (1, 2026, 0)

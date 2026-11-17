@@ -5,7 +5,7 @@
     $setting = $CI->Pengaturan_model->get();
   }
 
-  $tanggalStr = !empty($tanggal) ? tgl_indo($tanggal) : tgl_indo(date('Y-m-d'));
+  $tanggalStr = !empty($tanggal) ? tgl_indo_panjang($tanggal) : tgl_indo_panjang(date('Y-m-d'));
   $kota = !empty($setting['kota_penetapan']) ? $setting['kota_penetapan'] : 'Kota';
 ?>
 
@@ -37,7 +37,7 @@
       </div>
       <div class="ttd-space" style="height: 75px;"></div>
       <div class="ttd-body">
-        <strong class="text-decoration-underline d-block fw-bold text-dark">
+        <strong class="text-decoration-underline d-block fw-bold text-dark" id="ttdVerifikatorNama">
           <?= html_escape($setting['verifikator_nama']) ?>
         </strong>
         <?php if (!empty($setting['verifikator_pangkat'])): ?>

@@ -5,7 +5,7 @@ class Kegiatan extends MY_Controller
     public function __construct() {
         parent::__construct();
         $this->require_login();
-        $this->load->model(array('Kegiatan_model', 'Penerima_model', 'Jenis_biaya_model', 'Sumber_dana_model', 'Audit_model', 'Pos_model', 'Pengaturan_model'));
+        $this->load->model(array('Kegiatan_model', 'Penerima_model', 'Pendamping_model', 'Jenis_biaya_model', 'Sumber_dana_model', 'Audit_model', 'Pos_model', 'Pengaturan_model'));
         $this->load->library('Anggaran_service');
     }
 
@@ -78,12 +78,14 @@ class Kegiatan extends MY_Controller
             'tab' => $tab === 'history' ? 'history' : 'unfinished'
         );
 
-        $recordsTotal = $this->Kegiatan_model->count_all($filter, $scope, $ownId);
-        $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, $scope, $ownId, $params['search']);
+        $ownPendampingId = $this->own_pendamping_id();
+        $recordsTotal = $this->Kegiatan_model->count_all($filter, $scope, $ownId, $ownPendampingId);
+        $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, $scope, $ownId, $ownPendampingId, $params['search']);
         $rows = $this->Kegiatan_model->get_datatable(
             $filter,
             $scope,
             $ownId,
+            $ownPendampingId,
             $params['start'],
             $params['length'],
             $params['search'],
@@ -157,8 +159,13 @@ class Kegiatan extends MY_Controller
         $kegiatan = $this->Kegiatan_model->get_full_detail($kegiatanId);
         if (!$kegiatan) show_404();
 
-        if ($this->rbac->scope('kegiatan') === 'own' && !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $this->own_penerima_id())) {
-            $this->deny();
+        if ($this->rbac->scope('kegiatan') === 'own') {
+            $ownPenerimaId = $this->own_penerima_id();
+            $ownPendampingId = $this->own_pendamping_id();
+            $allowed = false;
+            if ($ownPenerimaId && $this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) $allowed = true;
+            if ($ownPendampingId && $this->Kegiatan_model->belongs_to_pendamping($kegiatanId, $ownPendampingId)) $allowed = true;
+            if (!$allowed) $this->deny();
         }
 
         $tahunAnggaranId = (int)$kegiatan['tahun_anggaran_id'];
@@ -184,6 +191,7 @@ class Kegiatan extends MY_Controller
             'data'  => array(
                 'kegiatan'       => $kegiatan,
                 'penerima'       => $this->Penerima_model->all_active($tahun),
+                'pendamping'     => $this->Pendamping_model->all(),
                 'sumber_dana'    => $this->Sumber_dana_model->all(),
                 'jenis_kegiatan' => $this->db->where('is_active', 1)->order_by('urutan')->get('jenis_kegiatan')->result_array(),
                 'jenis_biaya'    => $this->Jenis_biaya_model->all(),
@@ -262,23 +270,8 @@ class Kegiatan extends MY_Controller
 
         $savedId = $this->Kegiatan_model->save_header($data, $id ?: NULL, (int)$this->user['id']);
 
-        if ($this->rbac->scope('kegiatan') === 'own') {
-            $ownPenerimaId = $this->own_penerima_id();
-            if (!$ownPenerimaId) {
-                $this->respond(FALSE, 'Akun belum memiliki identitas pendamping. Silakan hubungi administrator.', array(), array(), 422);
-            }
-            $alreadyOwn = $this->db->where(array('kegiatan_id' => $savedId, 'penerima_id' => $ownPenerimaId))
-                ->count_all_results('kegiatan_peserta');
-            if (!$alreadyOwn) {
-                $this->Pos_model->buat_pos_pendamping_baku($tahunAnggaranId);
-                $defaultPos = $this->Pos_model->pos_default_penerima($ownPenerimaId, $tahunAnggaranId);
-                $this->db->insert('kegiatan_peserta', array(
-                    'kegiatan_id' => $savedId,
-                    'penerima_id' => $ownPenerimaId,
-                    'pos_anggaran_id' => $defaultPos ? (int)$defaultPos['id'] : NULL,
-                ));
-            }
-        }
+        // Pendamping tidak lagi otomatis ditambahkan sebagai peserta.
+        // Peserta dapat ditambahkan manual pada halaman rincian.
 
         $this->Audit_model->write(
             'KEGIATAN',
@@ -304,15 +297,22 @@ class Kegiatan extends MY_Controller
 
         $payload = input_json();
         $kegiatanId = decrypt_id($payload['kegiatan_id'] ?? $this->input->post('kegiatan_id'));
-        $penerimaId = decrypt_id($payload['penerima_id'] ?? $this->input->post('penerima_id'));
+        $rawPenerima = $payload['penerima_id'] ?? $this->input->post('penerima_id');
+        $pendampingId = null;
+        $penerimaId = null;
+        if (is_string($rawPenerima) && strpos($rawPenerima, 'pend_') === 0) {
+            $pendampingId = (int)substr($rawPenerima, 5);
+        } else {
+            $penerimaId = decrypt_id($rawPenerima);
+        }
         $kegiatanPesertaId = decrypt_id($payload['id'] ?? $this->input->post('id'));
         $posAnggaranId = decrypt_id($payload['pos_anggaran_id'] ?? $this->input->post('pos_anggaran_id'));
         $alasanPengalihan = trim((string)($payload['alasan_pengalihan'] ?? $this->input->post('alasan_pengalihan', TRUE)));
         $rawDanaAwal = $payload['dana_awal'] ?? $this->input->post('dana_awal', TRUE);
         $danaAwal = clean_number($rawDanaAwal);
 
-        if (!$kegiatanId || !$penerimaId) {
-            $this->respond(FALSE, 'ID Kegiatan atau Penerima tidak valid.', array(), array(), 422);
+        if (!$kegiatanId || (!$penerimaId && !$pendampingId)) {
+            $this->respond(FALSE, 'ID Kegiatan atau Peserta tidak valid.', array(), array(), 422);
         }
         if ($danaAwal < 0) {
             $this->respond(FALSE, 'Dana awal tidak boleh bernilai negatif.', array(), array('dana_awal' => 'Tidak boleh negatif.'), 422);
@@ -417,6 +417,7 @@ class Kegiatan extends MY_Controller
         $pesertaData = array(
             'id'                => $kegiatanPesertaId,
             'penerima_id'       => $penerimaId,
+            'pendamping_id'     => $pendampingId,
             'pos_anggaran_id'   => $posAnggaranId,
             'alasan_pengalihan' => $alasanPengalihan,
             'dana_awal'         => $danaAwal,

@@ -76,7 +76,7 @@
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPendamping">
     <i class="bi bi-people me-1"></i>Pos Pendamping (<?= count(array_filter($rows, fn($r) => $r['tipe']==='PENDAMPING')) ?>)
   </button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabKegiatan">
+  <li class="nav-item" style="display:none;"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabKegiatan">
     <i class="bi bi-calendar-event me-1"></i>Pos Kegiatan (<?= count(array_filter($rows, fn($r) => $r['tipe']==='KEGIATAN')) ?>)
   </button></li>
 </ul>
@@ -576,6 +576,15 @@
               <input type="hidden" id="hidPaguPendamping" name="pagu_pendamping">
             </div>
             <div class="form-text">Nilai ini diterapkan ke seluruh pos jabatan pendamping.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Pagu Sekretariat</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">Rp</span>
+              <input type="text" class="form-control input-rupiah" name="pagu_sekretariat" data-target-hidden="#hidPaguSekretariat" placeholder="0">
+              <input type="hidden" id="hidPaguSekretariat" name="pagu_sekretariat">
+            </div>
+            <div class="form-text">Nilai ini diterapkan ke pos yang namanya mengandung "Sekretariat".</div>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="overwrite" value="1" id="chkOverwrite">

@@ -105,6 +105,7 @@ class Pos extends MY_Controller
             'ANGGOTA'    => clean_number($this->input->post('pagu_anggota')),
         ];
         $paguPendamping = clean_number($this->input->post('pagu_pendamping'));
+        $paguSekretariat = clean_number($this->input->post('pagu_sekretariat'));
 
         if (!$tahunId) $this->respond(false, 'Tahun tidak valid.', [], [], 422);
 
@@ -115,6 +116,7 @@ class Pos extends MY_Controller
 
         $n = $this->Pos_model->terapkan_pagu_standar($tahunId, $standar, $overwrite, (int)$this->user['id']);
         $nPendamping = $this->Pos_model->terapkan_pagu_pendamping($tahunId, $paguPendamping, $overwrite, (int)$this->user['id']);
+        $nSekretariat = $this->Pos_model->terapkan_pagu_sekretariat($tahunId, $paguSekretariat, $overwrite, (int)$this->user['id']);
 
         $this->Audit_model->write('POS_ANGGARAN', $tahunId, 'TERAPKAN_STANDAR',
             [], array_merge($standar, [
@@ -125,7 +127,7 @@ class Pos extends MY_Controller
             ]),
             (int)$this->user['id']);
 
-        $this->respond(true, "{$n} pos DPRD dan {$nPendamping} pos pendamping berhasil diperbarui pagu standarnya.");
+        $this->respond(true, "{$n} pos DPRD, {$nPendamping} pos pendamping, dan {$nSekretariat} pos sekretariat berhasil diperbarui pagu standarnya.");
     }
 
     // ─── Revisi Pagu Pos ─────────────────────────────────────────────

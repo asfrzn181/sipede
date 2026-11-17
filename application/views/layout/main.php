@@ -118,7 +118,9 @@
         </a>
         <?php endif; ?>
 
-        <?php if(can('kegiatan.view_all') || can('kegiatan.view_own') || can('laporan.view_all') || can('laporan.view_own')): ?>
+        <?php $isSuperAdmin = (($currentUser['role'] ?? '') === 'SUPERADMIN' || (int)($currentUser['role_id'] ?? 0) === 1); ?>
+
+        <?php if($isSuperAdmin && (can('kegiatan.view_all') || can('kegiatan.view_own') || can('laporan.view_all') || can('laporan.view_own'))): ?>
         <div class="nav-section">LAPORAN &amp; ANALITIK</div>
         <a class="nav-link <?= ($cClass === 'rekapitulasi') ? 'active' : '' ?>" href="<?= site_url('rekapitulasi') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
@@ -128,6 +130,7 @@
         <?php endif; ?>
 
         <?php if(can('laporan.view_all') || can('laporan.view_own')): ?>
+        <?php if($isSuperAdmin): ?>
         <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'index') ? 'active' : '' ?>" href="<?= site_url('laporan') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-pie-chart"></i>
@@ -138,6 +141,7 @@
           <i class="bi bi-person-vcard"></i>
           <span class="menu-title">Per Anggota DPRD</span>
         </a>
+        <?php endif; ?>
         <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'perorang') ? 'active' : '' ?>" href="<?= site_url('laporan/perorang') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
           <i class="bi bi-person-lines-fill"></i>
