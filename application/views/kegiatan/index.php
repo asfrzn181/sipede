@@ -173,16 +173,34 @@ $(function(){
   });
 
   $(document).on('click', '.js-delete-kegiatan', function(){
-    if (!confirm('Hapus kegiatan ini?')) return;
     var id = $(this).data('id');
+    if (window.Swal) {
+      Swal.fire({
+        title: 'Hapus kegiatan?',
+        text: 'Data kegiatan akan dihapus permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Hapus',
+        cancelButtonText: 'Batal'
+      }).then(function(result){
+        if (result.isConfirmed) doDeleteKegiatan(id);
+      });
+      return;
+    }
+    if (!confirm('Hapus kegiatan ini?')) return;
+    doDeleteKegiatan(id);
+  });
+
+  function doDeleteKegiatan(id) {
     $.post(window.APP.baseUrl + 'kegiatan/delete/' + id, {_token: window.APP.csrfToken}, function(res){
       if (res && res.status) {
         kegiatanDT.ajax.reload();
       } else {
-        alert(res.message || 'Gagal menghapus kegiatan.');
+        if (window.Swal) Swal.fire('Gagal', res.message || 'Gagal menghapus kegiatan.', 'error');
+        else alert(res.message || 'Gagal menghapus kegiatan.');
       }
     }, 'json');
-  });
+  }
 
   $('#kegiatanTabs .nav-link').on('click', function(){
     $('#kegiatanTabs .nav-link').removeClass('active');

@@ -386,25 +386,34 @@ class Kegiatan extends MY_Controller
         $tahunKalender = (int)($tahunRow['tahun'] ?? 0);
 
         // Cek duplikasi peserta dalam satu kegiatan
-        $existing = $this->db->get_where('kegiatan_peserta', array('kegiatan_id' => $kegiatanId, 'penerima_id' => $penerimaId))->row_array();
+        if ($pendampingId) {
+            $existing = $this->db->get_where('kegiatan_peserta', array('kegiatan_id' => $kegiatanId, 'pendamping_id' => $pendampingId))->row_array();
+        } else {
+            $existing = $this->db->get_where('kegiatan_peserta', array('kegiatan_id' => $kegiatanId, 'penerima_id' => $penerimaId))->row_array();
+        }
         if ($existing && (!$kegiatanPesertaId || (int)$existing['id'] !== (int)$kegiatanPesertaId)) {
-            $this->respond(FALSE, 'Penerima / Peserta ini sudah terdaftar dalam kegiatan ini.', array(), array(), 422);
+            $this->respond(FALSE, 'Peserta ini sudah terdaftar dalam kegiatan ini.', array(), array(), 422);
         }
 
-        $penerima = $this->Penerima_model->find($penerimaId);
-        if (!$penerima) {
-            $this->respond(FALSE, 'Data penerima tidak ditemukan.', array(), array(), 404);
-        }
-        if (!$this->Penerima_model->berlaku_pada_tahun($penerima, $tahunKalender)) {
-            $this->respond(FALSE, 'Anggota DPRD tidak berada dalam periode jabatan pada tahun kegiatan.', array(), array('penerima_id' => 'Periode jabatan tidak sesuai tahun kegiatan.'), 422);
-        }
-
-        // Semua peserta memiliki anggaran bawaan, tetapi sumber anggaran dapat
-        // dipilih eksplisit. Pendamping dapat memakai pos DPRD dan sebaliknya.
-        $posDefault = $this->Pos_model->pos_default_penerima($penerimaId, $year);
-        if (!$posDefault && $penerima['tipe'] === 'DPRD') {
-            $this->Pos_model->buat_pos_dprd_otomatis($year);
+        if ($pendampingId) {
+            $pendamping = $this->Pendamping_model->find($pendampingId);
+            if (!$pendamping) {
+                $this->respond(FALSE, 'Data pendamping tidak ditemukan.', array(), array(), 404);
+            }
+            $posDefault = $this->Pos_model->pos_default_penerima(0, $year, $pendampingId);
+        } else {
+            $penerima = $this->Penerima_model->find($penerimaId);
+            if (!$penerima) {
+                $this->respond(FALSE, 'Data penerima tidak ditemukan.', array(), array(), 404);
+            }
+            if (!$this->Penerima_model->berlaku_pada_tahun($penerima, $tahunKalender)) {
+                $this->respond(FALSE, 'Anggota DPRD tidak berada dalam periode jabatan pada tahun kegiatan.', array(), array('penerima_id' => 'Periode jabatan tidak sesuai tahun kegiatan.'), 422);
+            }
             $posDefault = $this->Pos_model->pos_default_penerima($penerimaId, $year);
+            if (!$posDefault && $penerima['tipe'] === 'DPRD') {
+                $this->Pos_model->buat_pos_dprd_otomatis($year);
+                $posDefault = $this->Pos_model->pos_default_penerima($penerimaId, $year);
+            }
         }
         if (!$posAnggaranId) {
             $posAnggaranId = $posDefault ? (int)$posDefault['id'] : NULL;
