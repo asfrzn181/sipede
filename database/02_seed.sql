@@ -140,7 +140,7 @@ INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.kode IN (
   'dashboard.view_own',
   'anggaran.view_own',
-  'kegiatan.view_own', 'kegiatan.create', 'kegiatan.update', 'kegiatan.ajukan',
+  'kegiatan.view_own', 'kegiatan.create', 'kegiatan.update',
   'laporan.view_own', 'laporan.export'
 ) WHERE r.kode = 'PENDAMPING';
 
