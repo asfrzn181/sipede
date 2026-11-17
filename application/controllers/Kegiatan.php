@@ -79,6 +79,9 @@ class Kegiatan extends MY_Controller
         );
 
         $ownPendampingId = $this->own_pendamping_id();
+        if ($scope === 'own' && !$ownId && !$ownPendampingId) {
+            $filter['created_by'] = (int)$this->user['id'];
+        }
         $recordsTotal = $this->Kegiatan_model->count_all($filter, $scope, $ownId, $ownPendampingId);
         $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, $scope, $ownId, $ownPendampingId, $params['search']);
         $rows = $this->Kegiatan_model->get_datatable(
@@ -135,6 +138,7 @@ class Kegiatan extends MY_Controller
             }
             $aksiHtml .= '</div></div>';
 
+            $dibuatOlehHtml = '<span class="small">' . html_escape($row['dibuat_oleh_nama'] ?: '-') . '</span>';
             $data[] = array(
                 $noSuratHtml,
                 $temaHtml,
@@ -143,6 +147,7 @@ class Kegiatan extends MY_Controller
                 $pesertaHtml,
                 $totalHtml,
                 $statusHtml,
+                $dibuatOlehHtml,
                 $aksiHtml
             );
         }

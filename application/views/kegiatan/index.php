@@ -52,6 +52,7 @@
             <th style="width: 80px;" class="text-center">Peserta</th>
             <th style="width: 140px;" class="text-end">Total Biaya</th>
             <th style="width: 95px;" class="text-center">Status</th>
+            <th>Diinput Oleh</th>
             <th class="no-sort text-end" style="width: 170px;">Aksi</th>
           </tr>
         </thead>

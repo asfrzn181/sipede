@@ -83,6 +83,9 @@ class Kegiatan_model extends CI_Model {
         if (!empty($filter['tahun_anggaran_id'])) {
             $this->db->where('k.tahun_anggaran_id', (int)$filter['tahun_anggaran_id']);
         }
+        if (!empty($filter['created_by'])) {
+            $this->db->where('k.created_by', (int)$filter['created_by']);
+        }
         $this->apply_workflow_tab($filter);
         if ($search !== '') {
             $this->db->group_start();
@@ -91,6 +94,9 @@ class Kegiatan_model extends CI_Model {
             $this->db->or_like('k.tempat', $search);
             $this->db->or_like('k.tema', $search);
             $this->db->group_end();
+        }
+        if (!empty($filter['created_by'])) {
+            $this->db->where('k.created_by', (int)$filter['created_by']);
         }
     }
 
@@ -119,11 +125,12 @@ class Kegiatan_model extends CI_Model {
         string $orderCol = 'k.tanggal_mulai',
         string $orderDir = 'DESC'
     ): array {
-        $this->db->select('k.*, ta.tahun AS tahun_anggaran, COUNT(DISTINCT kp.id) AS total_peserta, GROUP_CONCAT(DISTINCT p.nama ORDER BY p.tipe, p.nama SEPARATOR ", ") AS peserta', FALSE)
+        $this->db->select('k.*, ta.tahun AS tahun_anggaran, COUNT(DISTINCT kp.id) AS total_peserta, GROUP_CONCAT(DISTINCT p.nama ORDER BY p.tipe, p.nama SEPARATOR ", ") AS peserta, u.nama AS dibuat_oleh_nama', FALSE)
             ->from('kegiatan k')
             ->join('tahun_anggaran ta', 'ta.id = k.tahun_anggaran_id', 'left')
             ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id', 'left')
-            ->join('penerima p', 'p.id = kp.penerima_id', 'left');
+            ->join('penerima p', 'p.id = kp.penerima_id', 'left')
+            ->join('users u', 'u.id = k.created_by', 'left');
 
         if ($scope === 'own' && ($ownId || $ownPendampingId)) {
             $this->db->join('kegiatan_peserta kp_own', 'kp_own.kegiatan_id = k.id', 'inner');
@@ -141,6 +148,9 @@ class Kegiatan_model extends CI_Model {
         }
         if (!empty($filter['tahun_anggaran_id'])) {
             $this->db->where('k.tahun_anggaran_id', (int)$filter['tahun_anggaran_id']);
+        }
+        if (!empty($filter['created_by'])) {
+            $this->db->where('k.created_by', (int)$filter['created_by']);
         }
         $this->apply_workflow_tab($filter);
 
