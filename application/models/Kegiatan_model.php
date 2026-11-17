@@ -48,12 +48,21 @@ class Kegiatan_model extends CI_Model {
         return (bool)$pendampingId && $this->db->where(array('kegiatan_id' => $id, 'pendamping_id' => $pendampingId))->count_all_results('kegiatan_peserta');
     }
 
-    public function latest(int $limit = 10, ?string $scope = 'all', ?int $ownId = null): array {
-        $this->db->select('k.*, GROUP_CONCAT(p.nama SEPARATOR ", ") AS peserta', FALSE)
+    public function latest(int $limit = 10, ?string $scope = 'all', ?int $ownId = null, ?int $ownPendampingId = null): array {
+        $this->db->select('k.*, GROUP_CONCAT(COALESCE(p.nama, pd.nama) SEPARATOR ", ") AS peserta', FALSE)
             ->from('kegiatan k')
             ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id', 'left')
-            ->join('penerima p', 'p.id = kp.penerima_id', 'left');
-        if ($scope === 'own' && $ownId) $this->db->where('kp.penerima_id', $ownId);
+            ->join('penerima p', 'p.id = kp.penerima_id', 'left')
+            ->join('pendamping pd', 'pd.id = kp.pendamping_id', 'left');
+        if ($scope === 'own' && ($ownId || $ownPendampingId)) {
+            $this->db->group_start();
+            if ($ownId) $this->db->where('kp.penerima_id', $ownId);
+            if ($ownPendampingId) {
+                if ($ownId) $this->db->or_where('kp.pendamping_id', $ownPendampingId);
+                else $this->db->where('kp.pendamping_id', $ownPendampingId);
+            }
+            $this->db->group_end();
+        }
         return $this->db->group_by('k.id')->order_by('k.created_at', 'DESC')->limit($limit)->get()->result_array();
     }
 

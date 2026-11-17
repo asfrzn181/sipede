@@ -14,7 +14,7 @@ class Dashboard extends MY_Controller {
         $pos   = null;
 
         if ($scope === 'own') {
-            $pos = $this->Pos_model->pos_default_penerima($this->own_penerima_id(), $year);
+            $pos = $this->Pos_model->pos_default_penerima($this->own_penerima_id() ?: 0, $year, $this->own_pendamping_id());
         }
 
         $this->load->view('layout/main', array(
@@ -31,7 +31,8 @@ class Dashboard extends MY_Controller {
 
         if ($scope === 'own') {
             $ownId = $this->own_penerima_id();
-            $pos = $this->Pos_model->pos_default_penerima($ownId, $year);
+            $ownPendampingId = $this->own_pendamping_id();
+            $pos = $this->Pos_model->pos_default_penerima($ownId ?: 0, $year, $ownPendampingId);
 
             if ($pos) {
                 $saldo = $this->Pos_model->saldo_pos((int)$pos['id']);
@@ -45,14 +46,25 @@ class Dashboard extends MY_Controller {
                 $summary = array('pagu' => 0, 'realisasi' => 0, 'sisa' => 0, 'pos_nama' => '-');
             }
 
-            $monthly = $this->db->query('
-                SELECT MONTH(k.tanggal_mulai) bulan, SUM(kb.volume*kb.tarif) total
-                FROM kegiatan k
-                JOIN kegiatan_peserta kp ON kp.kegiatan_id=k.id
-                JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id=kp.id
-                WHERE k.tahun_anggaran_id=? AND k.status="AKTIF" AND kp.penerima_id=?
-                GROUP BY MONTH(k.tanggal_mulai) ORDER BY bulan
-            ', array($year, $ownId))->result_array();
+            if ($ownPendampingId) {
+                $monthly = $this->db->query('
+                    SELECT MONTH(k.tanggal_mulai) bulan, SUM(kb.volume*kb.tarif) total
+                    FROM kegiatan k
+                    JOIN kegiatan_peserta kp ON kp.kegiatan_id=k.id
+                    JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id=kp.id
+                    WHERE k.tahun_anggaran_id=? AND k.status="AKTIF" AND kp.pendamping_id=?
+                    GROUP BY MONTH(k.tanggal_mulai) ORDER BY bulan
+                ', array($year, $ownPendampingId))->result_array();
+            } else {
+                $monthly = $this->db->query('
+                    SELECT MONTH(k.tanggal_mulai) bulan, SUM(kb.volume*kb.tarif) total
+                    FROM kegiatan k
+                    JOIN kegiatan_peserta kp ON kp.kegiatan_id=k.id
+                    JOIN kegiatan_biaya kb ON kb.kegiatan_peserta_id=kp.id
+                    WHERE k.tahun_anggaran_id=? AND k.status="AKTIF" AND kp.penerima_id=?
+                    GROUP BY MONTH(k.tanggal_mulai) ORDER BY bulan
+                ', array($year, $ownId))->result_array();
+            }
 
             $terkecil = array();
         } else {
@@ -89,7 +101,7 @@ class Dashboard extends MY_Controller {
             'summary'  => $summary,
             'monthly'  => $monthly,
             'terkecil' => $terkecil,
-            'latest'   => $this->Kegiatan_model->latest(10, $scope, $this->own_penerima_id())
+            'latest'   => $this->Kegiatan_model->latest(10, $scope, $this->own_penerima_id(), $this->own_pendamping_id())
         ));
     }
 }
