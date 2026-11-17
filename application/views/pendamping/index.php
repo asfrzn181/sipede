@@ -15,7 +15,6 @@
         <thead class="table-light">
           <tr>
             <th>Nama Lengkap</th>
-            <th>Jabatan</th>
             <th style="width: 90px;">Status</th>
             <?php if($can_manage): ?>
             <th class="no-sort text-end" style="width: 90px;">Aksi</th>
@@ -41,8 +40,7 @@
           <label class="form-label small fw-semibold">Nama Lengkap</label>
           <input class="form-control mb-3" name="nama" placeholder="Nama Lengkap &amp; Gelar" required>
 
-          <label class="form-label small fw-semibold">Jabatan</label>
-          <input class="form-control mb-3" name="jabatan" placeholder="Contoh: Ajudan Ketua DPRD">
+          <input type="hidden" name="jabatan" value="Pendamping">
 
           <label class="form-label small fw-semibold">Status Keaktifan</label>
           <select class="form-select" name="is_active">

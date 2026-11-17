@@ -43,12 +43,11 @@ class Pendamping extends MY_Controller {
             $rowEncJson = htmlspecialchars(json_encode($rowEnc), ENT_QUOTES, 'UTF-8');
 
             $namaHtml = '<span class="fw-semibold">' . html_escape($row['nama']) . '</span>';
-            $jabatanHtml = html_escape($row['jabatan'] ?: '-');
             $statusBadge = !empty($row['is_active']) ? 'success' : 'secondary';
             $statusLabel = !empty($row['is_active']) ? 'Aktif' : 'Nonaktif';
             $statusHtml = '<span class="badge text-bg-' . $statusBadge . '">' . $statusLabel . '</span>';
 
-            $rowArr = array($namaHtml, $jabatanHtml, $statusHtml);
+            $rowArr = array($namaHtml, $statusHtml);
             if ($canManage) {
                 $rowArr[] = '<div class="text-end">'
                     . '<button class="btn btn-sm btn-outline-primary js-edit-pendamping" data-row=\'' . $rowEncJson . '\'>'
