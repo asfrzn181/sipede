@@ -92,6 +92,11 @@
           <i class="bi bi-person-vcard"></i>
           <span class="menu-title">Anggota DPRD</span>
         </a>
+        <a class="nav-link <?= ($cClass === 'pendamping') ? 'active' : '' ?>" href="<?= site_url('pendamping') ?>">
+          <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>
+          <i class="bi bi-person-badge"></i>
+          <span class="menu-title">Master Pendamping</span>
+        </a>
         <?php endif; ?>
 
         <?php if(can('tahun.view')): ?>
@@ -129,7 +134,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if(can('laporan.view_all') || can('laporan.view_own')): ?>
+        <?php if(can('laporan.view_all')): ?>
         <?php if($isSuperAdmin): ?>
         <a class="nav-link <?= ($cClass === 'laporan' && $cMethod === 'index') ? 'active' : '' ?>" href="<?= site_url('laporan') ?>">
           <span class="menu-num"><?= sprintf('%02d', $menuNo++) ?></span>

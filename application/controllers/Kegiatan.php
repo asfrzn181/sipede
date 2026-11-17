@@ -130,6 +130,9 @@ class Kegiatan extends MY_Controller
             if ($canCreate && $row['status'] !== 'BATAL') {
                 $aksiHtml .= '<button class="btn btn-outline-secondary js-edit-header" data-row=\'' . $rowEncJson . '\' title="Edit Surat Tugas"><i class="bi bi-pencil"></i></button>';
             }
+            if ($canCreate && $row['status'] === 'DRAFT') {
+                $aksiHtml .= '<button class="btn btn-outline-danger js-delete-kegiatan" data-id="' . $encId . '" title="Hapus Kegiatan"><i class="bi bi-trash"></i></button>';
+            }
             $aksiHtml .= '</div></div>';
 
             $data[] = array(
@@ -287,6 +290,27 @@ class Kegiatan extends MY_Controller
             'id'       => $encId,
             'redirect' => site_url('kegiatan/rincian/' . $encId)
         ));
+    }
+
+    public function delete($id): void {
+        $this->require_any(array('kegiatan.create', 'kegiatan.update'));
+        $kegiatanId = decrypt_id($id);
+        if (!$kegiatanId) show_404();
+        $row = $this->Kegiatan_model->find($kegiatanId);
+        if (!$row) $this->respond(FALSE, 'Kegiatan tidak ditemukan.', array(), array(), 404);
+        if ($row['status'] !== 'DRAFT') $this->respond(FALSE, 'Hanya kegiatan DRAFT yang dapat dihapus.', array(), array(), 422);
+
+        if ($this->rbac->scope('kegiatan') === 'own') {
+            $ownPenerimaId = $this->own_penerima_id();
+            $ownPendampingId = $this->own_pendamping_id();
+            $allowed = false;
+            if ($ownPenerimaId && $this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) $allowed = true;
+            if ($ownPendampingId && $this->Kegiatan_model->belongs_to_pendamping($kegiatanId, $ownPendampingId)) $allowed = true;
+            if (!$allowed) $this->deny();
+        }
+
+        $this->db->where('id', $kegiatanId)->delete('kegiatan');
+        $this->respond(TRUE, 'Kegiatan berhasil dihapus.');
     }
 
     /**
@@ -653,7 +677,7 @@ class Kegiatan extends MY_Controller
         $filter = array('verification_tab' => $isHistory ? 'history' : 'queue');
 
         $recordsTotal = $this->Kegiatan_model->count_all($filter, 'all');
-        $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, 'all', null, $params['search']);
+        $recordsFiltered = $this->Kegiatan_model->count_filtered($filter, 'all', null, null, $params['search']);
         $rows = $this->Kegiatan_model->get_datatable(
             $filter,
             'all',

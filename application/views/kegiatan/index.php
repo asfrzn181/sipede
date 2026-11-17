@@ -171,6 +171,18 @@ $(function(){
     kegiatanDT.ajax.reload();
   });
 
+  $(document).on('click', '.js-delete-kegiatan', function(){
+    if (!confirm('Hapus kegiatan ini?')) return;
+    var id = $(this).data('id');
+    $.post(window.APP.baseUrl + 'kegiatan/delete/' + id, {_token: window.APP.csrfToken}, function(res){
+      if (res && res.status) {
+        kegiatanDT.ajax.reload();
+      } else {
+        alert(res.message || 'Gagal menghapus kegiatan.');
+      }
+    }, 'json');
+  });
+
   $('#kegiatanTabs .nav-link').on('click', function(){
     $('#kegiatanTabs .nav-link').removeClass('active');
     $(this).addClass('active');

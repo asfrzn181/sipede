@@ -101,32 +101,7 @@ class User extends MY_Controller
         $rawPenerima = $this->input->post('penerima_id');
         $penerimaId = $rawPenerima !== '' && $rawPenerima !== null ? decrypt_id($rawPenerima) : NULL;
 
-        if ($role['kode'] === 'PENDAMPING') {
-            $jabatan = trim((string)$this->input->post('jabatan', TRUE)) ?: 'Pendamping';
-            $linked = $penerimaId ? $this->db->get_where('penerima', array('id' => $penerimaId))->row_array() : NULL;
-            if (!$linked || $linked['tipe'] !== 'PENDAMPING') {
-                // Tidak ada lagi input dari Master Pendamping. Record penerima
-                // dibuat otomatis agar kegiatan tetap memiliki identitas dan
-                // pos anggaran bawaan yang dapat dipakai oleh workflow lama.
-                $linked = NULL;
-            }
-            if ($linked) {
-                $penerimaId = (int)$linked['id'];
-                $this->db->where('id', $penerimaId)->update('penerima', array(
-                    'nama' => $this->input->post('nama', TRUE),
-                    'jabatan' => $jabatan,
-                    'is_active' => 1,
-                ));
-            } else {
-                $this->db->insert('penerima', array(
-                    'nama' => $this->input->post('nama', TRUE),
-                    'tipe' => 'PENDAMPING',
-                    'jabatan' => $jabatan,
-                    'is_active' => 1,
-                ));
-                $penerimaId = (int)$this->db->insert_id();
-            }
-        }
+        $pendampingId = null; // Opsional; user tidak harus terikat ke satu pendamping.
 
         if ($id && (int)$id === (int)$this->user['id'] && !$this->input->post('is_active')) {
             $this->respond(FALSE, 'Anda tidak boleh menonaktifkan diri sendiri.', array(), array(), 403);
@@ -140,6 +115,7 @@ class User extends MY_Controller
             'nama'                  => $this->input->post('nama', TRUE),
             'role_id'               => $roleId,
             'penerima_id'           => $penerimaId,
+            'pendamping_id'         => $pendampingId,
             'is_active'             => (int)$this->input->post('is_active', TRUE),
             'wajib_ganti_password'  => 1,
             'password'              => $password
