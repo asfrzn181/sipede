@@ -79,7 +79,7 @@ class Kegiatan extends MY_Controller
         );
 
         $ownPendampingId = $this->own_pendamping_id();
-        if ($scope === 'own' && !$ownId && !$ownPendampingId) {
+        if ($scope === 'own') {
             $filter['created_by'] = (int)$this->user['id'];
         }
         $recordsTotal = $this->Kegiatan_model->count_all($filter, $scope, $ownId, $ownPendampingId);

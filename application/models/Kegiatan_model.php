@@ -75,7 +75,12 @@ class Kegiatan_model extends CI_Model {
                 if ($ownId) $this->db->or_where('kp_own.pendamping_id', $ownPendampingId);
                 else $this->db->where('kp_own.pendamping_id', $ownPendampingId);
             }
+            if (!empty($filter['created_by'])) {
+                $this->db->or_where('k.created_by', (int)$filter['created_by']);
+            }
             $this->db->group_end();
+        } elseif ($scope === 'own' && !empty($filter['created_by'])) {
+            $this->db->where('k.created_by', (int)$filter['created_by']);
         }
         if (!empty($filter['status'])) {
             $this->db->where('k.status', $filter['status']);
@@ -140,7 +145,12 @@ class Kegiatan_model extends CI_Model {
                 if ($ownId) $this->db->or_where('kp_own.pendamping_id', $ownPendampingId);
                 else $this->db->where('kp_own.pendamping_id', $ownPendampingId);
             }
+            if (!empty($filter['created_by'])) {
+                $this->db->or_where('k.created_by', (int)$filter['created_by']);
+            }
             $this->db->group_end();
+        } elseif ($scope === 'own' && !empty($filter['created_by'])) {
+            $this->db->where('k.created_by', (int)$filter['created_by']);
         }
 
         if (!empty($filter['status'])) {
