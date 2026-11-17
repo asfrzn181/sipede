@@ -168,6 +168,8 @@ class Kegiatan extends MY_Controller
             $allowed = false;
             if ($ownPenerimaId && $this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) $allowed = true;
             if ($ownPendampingId && $this->Kegiatan_model->belongs_to_pendamping($kegiatanId, $ownPendampingId)) $allowed = true;
+            if ((int)($kegiatan['created_by'] ?? 0) === (int)$this->user['id']) $allowed = true;
+            if ((int)($kegiatan['diajukan_oleh'] ?? 0) === (int)$this->user['id']) $allowed = true;
             if (!$allowed) $this->deny();
         }
 
@@ -352,9 +354,13 @@ class Kegiatan extends MY_Controller
 
         if ($this->rbac->scope('kegiatan') === 'own') {
             $ownPenerimaId = $this->own_penerima_id();
-            if (!$ownPenerimaId || !$this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) {
-                $this->deny();
-            }
+            $ownPendampingId = $this->own_pendamping_id();
+            $allowed = false;
+            if ($ownPenerimaId && $this->Kegiatan_model->belongs_to_penerima($kegiatanId, $ownPenerimaId)) $allowed = true;
+            if ($ownPendampingId && $this->Kegiatan_model->belongs_to_pendamping($kegiatanId, $ownPendampingId)) $allowed = true;
+            if ((int)($kegiatan['created_by'] ?? 0) === (int)$this->user['id']) $allowed = true;
+            if ((int)($kegiatan['diajukan_oleh'] ?? 0) === (int)$this->user['id']) $allowed = true;
+            if (!$allowed) $this->deny();
             // Pendamping boleh menambah peserta lain pada kegiatan miliknya sendiri.
             if ($kegiatanPesertaId) {
                 $ownedParticipant = $this->db->where(array(
