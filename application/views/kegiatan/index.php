@@ -123,13 +123,7 @@
               <label class="form-label small fw-semibold">Tempat / Kota Tujuan <span class="text-danger">*</span></label>
               <input class="form-control" name="tempat" id="inpTempat" placeholder="Contoh: Jakarta Pusat / Bandung" required>
             </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold">Status Awal</label>
-              <select class="form-select" name="status" id="inpStatus">
-                <option value="DRAFT">DRAFT</option>
-                <option value="AKTIF">Selesai / Terverifikasi</option>
-              </select>
-            </div>
+            <input type="hidden" name="status" id="inpStatus" value="DRAFT">
             <div class="col-12">
               <label class="form-label small fw-semibold">Tema / Maksud Kegiatan <span class="text-danger">*</span></label>
               <textarea class="form-control" name="tema" id="inpTema" rows="2" placeholder="Contoh: Kunjungan Kerja Komisi III Terkait Pengelolaan Tata Ruang Wilayah" required></textarea>

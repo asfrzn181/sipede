@@ -128,13 +128,16 @@ class Kegiatan extends MY_Controller
             $rowEncJson = htmlspecialchars(json_encode($rowEnc), ENT_QUOTES, 'UTF-8');
 
             $aksiHtml = '<div class="text-end text-nowrap"><div class="btn-group btn-group-sm">'
-                . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-outline-primary" title="Buka Rincian Kegiatan & Peserta"><i class="bi bi-list-check"></i> Rincian</a>'
-                . '<a href="' . site_url('kegiatan/bukti_rekap/' . $encId) . '" class="btn btn-outline-info" title="Bukti Rekapitulasi"><i class="bi bi-receipt"></i> Bukti</a>';
-            if ($canCreate && $row['status'] !== 'BATAL') {
-                $aksiHtml .= '<button class="btn btn-outline-secondary js-edit-header" data-row=\'' . $rowEncJson . '\' title="Edit Surat Tugas"><i class="bi bi-pencil"></i></button>';
-            }
-            if ($canCreate && $row['status'] === 'DRAFT') {
-                $aksiHtml .= '<button class="btn btn-outline-danger js-delete-kegiatan" data-id="' . $encId . '" title="Hapus Kegiatan"><i class="bi bi-trash"></i></button>';
+                . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-outline-primary" title="Buka Rincian Kegiatan & Peserta"><i class="bi bi-list-check"></i> Rincian</a>';
+
+            if ($row['status'] !== 'DIAJUKAN') {
+                $aksiHtml .= '<a href="' . site_url('kegiatan/bukti_rekap/' . $encId) . '" class="btn btn-outline-info" title="Bukti Rekapitulasi"><i class="bi bi-receipt"></i> Bukti</a>';
+                if ($canCreate && $row['status'] !== 'BATAL') {
+                    $aksiHtml .= '<button class="btn btn-outline-secondary js-edit-header" data-row=\'' . $rowEncJson . '\' title="Edit Surat Tugas"><i class="bi bi-pencil"></i></button>';
+                }
+                if ($canCreate && $row['status'] === 'DRAFT') {
+                    $aksiHtml .= '<button class="btn btn-outline-danger js-delete-kegiatan" data-id="' . $encId . '" title="Hapus Kegiatan"><i class="bi bi-trash"></i></button>';
+                }
             }
             $aksiHtml .= '</div></div>';
 
@@ -618,6 +621,10 @@ class Kegiatan extends MY_Controller
             if (!$allowed) $this->deny();
         }
 
+        if ($kegiatan['status'] !== 'AKTIF') {
+            show_error('Kegiatan harus berstatus AKTIF (terverifikasi) sebelum dicetak.', 422);
+            return;
+        }
         if (empty($kegiatan['dicetak_at'])) {
             $printedAt = date('Y-m-d H:i:s');
             $this->db->where('id', $kegiatanId)->update('kegiatan', array(
