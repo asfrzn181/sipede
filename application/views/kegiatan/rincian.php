@@ -624,7 +624,7 @@
 
         <div class="modal-footer bg-light">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
+          <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="btnSimpanPeserta">
             <i class="bi bi-check-circle"></i>
             <span>Simpan Peserta</span>
           </button>
@@ -946,6 +946,9 @@ $(function(){
       biaya:             biayaList
     };
 
+    var $btn = $('#btnSimpanPeserta');
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
+
     App.ajax({
       url: window.APP.baseUrl + 'kegiatan/save_peserta',
       data: JSON.stringify(payload),
@@ -954,7 +957,11 @@ $(function(){
       if (r.status) {
         bootstrap.Modal.getOrCreateInstance('#modalPeserta').hide();
         setTimeout(function(){ location.reload(); }, 500);
+      } else {
+        $btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> <span>Simpan Peserta</span>');
       }
+    }).fail(function(){
+      $btn.prop('disabled', false).html('<i class="bi bi-check-circle"></i> <span>Simpan Peserta</span>');
     });
   });
 

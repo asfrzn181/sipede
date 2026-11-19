@@ -130,14 +130,14 @@ class Kegiatan extends MY_Controller
             $aksiHtml = '<div class="text-end text-nowrap"><div class="btn-group btn-group-sm">'
                 . '<a href="' . site_url('kegiatan/rincian/' . $encId) . '" class="btn btn-outline-primary" title="Buka Rincian Kegiatan & Peserta"><i class="bi bi-list-check"></i> Rincian</a>';
 
-            if ($row['status'] !== 'DIAJUKAN') {
+            if ($row['status'] === 'AKTIF') {
                 $aksiHtml .= '<a href="' . site_url('kegiatan/bukti_rekap/' . $encId) . '" class="btn btn-outline-info" title="Bukti Rekapitulasi"><i class="bi bi-receipt"></i> Bukti</a>';
-                if ($canCreate && $row['status'] !== 'BATAL') {
-                    $aksiHtml .= '<button class="btn btn-outline-secondary js-edit-header" data-row=\'' . $rowEncJson . '\' title="Edit Surat Tugas"><i class="bi bi-pencil"></i></button>';
-                }
-                if ($canCreate && $row['status'] === 'DRAFT') {
-                    $aksiHtml .= '<button class="btn btn-outline-danger js-delete-kegiatan" data-id="' . $encId . '" title="Hapus Kegiatan"><i class="bi bi-trash"></i></button>';
-                }
+            }
+            if ($row['status'] !== 'DIAJUKAN' && $row['status'] !== 'BATAL' && $canCreate) {
+                $aksiHtml .= '<button class="btn btn-outline-secondary js-edit-header" data-row=\'' . $rowEncJson . '\' title="Edit Surat Tugas"><i class="bi bi-pencil"></i></button>';
+            }
+            if ($canCreate && $row['status'] === 'DRAFT') {
+                $aksiHtml .= '<button class="btn btn-outline-danger js-delete-kegiatan" data-id="' . $encId . '" title="Hapus Kegiatan"><i class="bi bi-trash"></i></button>';
             }
             $aksiHtml .= '</div></div>';
 
@@ -228,9 +228,14 @@ class Kegiatan extends MY_Controller
         if ($id && !$existing) {
             $this->respond(FALSE, 'Kegiatan tidak ditemukan.', array(), array(), 404);
         }
-        if ($existing && $this->rbac->scope('kegiatan') === 'own'
-            && !$this->Kegiatan_model->belongs_to_penerima($id, $this->own_penerima_id())) {
-            $this->deny();
+        if ($existing && $this->rbac->scope('kegiatan') === 'own') {
+            $ownPenerimaId = $this->own_penerima_id();
+            $ownPendampingId = $this->own_pendamping_id();
+            $allowed = false;
+            if ($ownPenerimaId && $this->Kegiatan_model->belongs_to_penerima($id, $ownPenerimaId)) $allowed = true;
+            if ($ownPendampingId && $this->Kegiatan_model->belongs_to_pendamping($id, $ownPendampingId)) $allowed = true;
+            if ((int)($existing['created_by'] ?? 0) === (int)$this->user['id']) $allowed = true;
+            if (!$allowed) $this->deny();
         }
 
         // Tahun dipilih saat membuat kegiatan. Saat mengedit, tahun parent
@@ -620,7 +625,11 @@ class Kegiatan extends MY_Controller
         }
 
         if ($kegiatan['status'] !== 'AKTIF') {
-            show_error('Kegiatan harus berstatus AKTIF (terverifikasi) sebelum dicetak.', 422);
+            $this->load->view('layout/main', array(
+                'title' => 'Bukti Rekapitulasi',
+                'view'  => 'kegiatan/belum_verifikasi',
+                'data'  => array('kegiatan' => $kegiatan)
+            ));
             return;
         }
         if (empty($kegiatan['dicetak_at'])) {

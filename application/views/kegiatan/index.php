@@ -233,9 +233,9 @@ $(function(){
     $('#inpTglSelesai').val(r.tanggal_selesai);
     $('#inpTempat').val(r.tempat);
     $('#inpTema').val(r.tema || r.nama_kegiatan);
-    $('#inpStatus').val(r.status);
-    $('#inpJenisKegiatan').val(r.jenis_kegiatan_id || '');
-    $('#inpSubjenisKegiatan').val(r.subjenis_kegiatan || '');
+    $('#inpStatus').val('DRAFT');
+    $('#inpJenisKegiatan').val(r.jenis_kegiatan_id || <?= (int)$defaultJenisKegiatanId ?>);
+    $('#inpSubjenisKegiatan').val(r.subjenis_kegiatan || '-');
     $('#modalHeaderTitle').html('<i class="bi bi-pencil-square text-primary me-1"></i> Edit Surat Tugas: ' + (r.no_surat_tugas || ''));
     bootstrap.Modal.getOrCreateInstance('#modalSuratTugas').show();
   });
