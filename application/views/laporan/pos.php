@@ -30,7 +30,12 @@ foreach ($rows as $row) {
 <div class="card shadow-sm">
   <div class="card-header bg-white d-flex justify-content-between align-items-center">
     <div class="fw-bold"><i class="bi bi-wallet2 text-primary me-1"></i>Ringkasan Pos Tahun <?= html_escape($tahunLabel) ?></div>
-    <span class="badge text-bg-light border text-muted"><?= count($rows) ?> pos</span>
+    <div class="d-flex gap-2">
+      <?php if(!empty($can_export)): ?>
+      <a class="btn btn-outline-success btn-sm" href="<?= site_url('laporan/pos_excel?tahun_anggaran_id=' . (int)$tahunId) ?>"><i class="bi bi-file-earmark-excel me-1"></i>Excel</a>
+      <?php endif; ?>
+      <span class="badge text-bg-light border text-muted"><?= count($rows) ?> pos</span>
+    </div>
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">

@@ -231,9 +231,18 @@ class Laporan extends MY_Controller
         $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($sisaCol) . $rowNum, (float)$detail['sisa']);
 
         $lastColumnLetter = Coordinate::stringFromColumnIndex($ketCol);
-        $sheet->getStyle('A1:' . $lastColumnLetter . $rowNum)->getAlignment()->setVertical('top');
+        $sheet->getStyle('A1:' . $lastColumnLetter . '1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1:' . $lastColumnLetter . '1')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A2:' . $lastColumnLetter . '2')->getFont()->setBold(true);
+        $sheet->getStyle('A2:' . $lastColumnLetter . '2')->getAlignment()->setHorizontal('center');
         $sheet->getStyle('A' . $headerRow . ':' . $lastColumnLetter . $headerRow)->getFont()->setBold(true);
         $sheet->getStyle('A' . $headerRow . ':' . $lastColumnLetter . $headerRow)->getAlignment()->setWrapText(true);
+        $sheet->getStyle('A' . $headerRow . ':' . $lastColumnLetter . $rowNum)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        for ($c = $componentStart; $c <= $sisaCol; $c++) {
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
+            $sheet->getStyle($col . ($headerRow + 1) . ':' . $col . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
+        }
+        $sheet->getStyle('A' . $headerRow . ':' . $lastColumnLetter . $rowNum)->getAlignment()->setVertical('top');
         for ($col = 1; $col <= $ketCol; $col++) $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
 
         $writer = new Xlsx($sheet->getParent());
@@ -256,9 +265,51 @@ class Laporan extends MY_Controller
                 'tahunList' => $tahunList,
                 'tahunId'   => $tahunId,
                 'tahunLabel'=> $tahunLabel,
-                'rows'      => $this->Laporan_model->ringkasan_pos($tahunId, $this->rbac->scope('laporan'), $this->own_penerima_id())
+                'rows'      => $this->Laporan_model->ringkasan_pos($tahunId, $this->rbac->scope('laporan'), $this->own_penerima_id()),
+            'can_export' => can('laporan.export'),
             )
         ));
+    }
+
+    public function pos_excel(): void {
+        $this->require_permission('laporan.export');
+        list(, $tahunId, $tahunLabel) = $this->tahun_laporan();
+        $rows = $this->Laporan_model->ringkasan_pos($tahunId, $this->rbac->scope('laporan'), $this->own_penerima_id());
+
+        $sheet = (new Spreadsheet())->getActiveSheet();
+        $headers = array('Kode', 'Nama Pos', 'Jenis', 'Tipe', 'Pemegang', 'Pagu', 'Realisasi', 'Sisa', 'Serapan %');
+        foreach ($headers as $i => $header) $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1) . '1', $header);
+
+        $rowNum = 2;
+        foreach ($rows as $row) {
+            $sheet->setCellValue('A' . $rowNum, $row['kode'] ?? '-');
+            $sheet->setCellValue('B' . $rowNum, $row['pos_nama'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $row['jenis_anggaran_nama'] ?: $row['tipe']);
+            $sheet->setCellValue('D' . $rowNum, $row['tipe']);
+            $sheet->setCellValue('E' . $rowNum, $row['penerima_nama'] ?: 'Tidak melekat');
+            $sheet->setCellValue('F' . $rowNum, (float)$row['pagu']);
+            $sheet->setCellValue('G' . $rowNum, (float)$row['realisasi']);
+            $sheet->setCellValue('H' . $rowNum, (float)$row['sisa']);
+            $sheet->setCellValue('I' . $rowNum, (float)$row['persentase']);
+            $rowNum++;
+        }
+
+        $lastColumnLetter = 'I';
+        $sheet->getStyle('A1:' . $lastColumnLetter . '1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:' . $lastColumnLetter . $rowNum)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        for ($col = 6; $col <= 8; $col++) {
+            $letter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+            $sheet->getStyle($letter . '2:' . $letter . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
+        }
+        for ($col = 1; $col <= 9; $col++) $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
+
+        $writer = new Xlsx($sheet->getParent());
+        $this->output
+            ->set_content_type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->set_header('Content-Disposition: attachment; filename="laporan_pos_' . $tahunLabel . '.xlsx"');
+        ob_start();
+        $writer->save('php://output');
+        $this->output->set_output(ob_get_clean());
     }
 
     public function riwayat(): void
