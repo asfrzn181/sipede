@@ -114,7 +114,7 @@
       </div>
       <div class="col-12 col-md-4">
         <small class="text-muted d-block">Tanggal Surat Tugas</small>
-        <span class="fw-semibold text-dark"><?= tgl_indo($kegiatan['tanggal_surat_tugas']) ?></span>
+        <span class="fw-semibold text-dark"><?= tgl_indo_panjang($kegiatan['tanggal_surat_tugas']) ?></span>
       </div>
       <div class="col-12 col-md-4">
         <small class="text-muted d-block">Tempat Pelaksanaan</small>
@@ -396,25 +396,9 @@
               <label class="form-label small fw-semibold">Tempat / Kota Pelaksanaan <span class="text-danger">*</span></label>
               <input class="form-control" name="tempat" value="<?= html_escape($kegiatan['tempat']) ?>" required>
             </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold">Jenis Kegiatan <span class="text-danger">*</span></label>
-              <select class="form-select" name="jenis_kegiatan_id" required>
-                <?php foreach (($jenis_kegiatan ?? array()) as $jk): ?>
-                  <option value="<?= (int)$jk['id'] ?>" <?= (int)$jk['id'] === (int)($kegiatan['jenis_kegiatan_id'] ?? 0) ? 'selected' : '' ?>><?= html_escape($jk['nama']) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold">Subjenis / Kategori</label>
-              <input class="form-control" name="subjenis_kegiatan" value="<?= html_escape($kegiatan['subjenis_kegiatan'] ?? '') ?>" placeholder="Contoh: Rapat Komisi I">
-            </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label small fw-semibold">Status</label>
-              <select class="form-select" name="status">
-                <option value="DRAFT" <?= $status === 'DRAFT' ? 'selected' : '' ?>>DRAFT</option>
-                <option value="AKTIF" <?= $status === 'AKTIF' ? 'selected' : '' ?>>Selesai / Terverifikasi</option>
-              </select>
-            </div>
+            <input type="hidden" name="jenis_kegiatan_id" value="<?= (int)($kegiatan['jenis_kegiatan_id'] ?? $defaultJenisKegiatanId ?? 0) ?>">
+            <input type="hidden" name="subjenis_kegiatan" value="<?= html_escape($kegiatan['subjenis_kegiatan'] ?: '-') ?>">
+            <input type="hidden" name="status" value="DRAFT">
             <div class="col-12">
               <label class="form-label small fw-semibold">Tema / Maksud Perjalanan Dinas <span class="text-danger">*</span></label>
               <textarea class="form-control" name="tema" rows="2" required><?= html_escape($kegiatan['tema']) ?></textarea>

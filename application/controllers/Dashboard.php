@@ -101,7 +101,7 @@ class Dashboard extends MY_Controller {
             'summary'  => $summary,
             'monthly'  => $monthly,
             'terkecil' => $terkecil,
-            'latest'   => $this->Kegiatan_model->latest(10, $scope, $this->own_penerima_id(), $this->own_pendamping_id())
+            'latest'   => $this->Kegiatan_model->latest(10, $scope, $this->own_penerima_id(), $this->own_pendamping_id(), (int)$this->user['id'], $scope === 'own' ? 'AKTIF' : null)
         ));
     }
 }
