@@ -246,9 +246,10 @@ class Laporan extends MY_Controller
         for ($col = 1; $col <= $ketCol; $col++) $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
 
         $writer = new Xlsx($sheet->getParent());
+        $fileName = 'laporan_perorang_' . preg_replace('/[^A-Za-z0-9_-]+/', '_', (string)($detail['person']['nama'] ?? 'data')) . '_' . $tahunLabel . '.xlsx';
         $this->output
             ->set_content_type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            ->set_header('Content-Disposition: attachment; filename="laporan_perorang_' . $penerimaId . '_' . $tahunLabel . '.xlsx"');
+            ->set_header('Content-Disposition: attachment; filename="' . $fileName . '"');
         ob_start();
         $writer->save('php://output');
         $this->output->set_output(ob_get_clean());
