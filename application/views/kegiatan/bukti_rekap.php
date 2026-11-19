@@ -171,8 +171,8 @@
 
 @media print {
   @page { size: 215mm 330mm; margin: 15mm; }
-  table { table-layout: fixed; width: 100%; }
-  th, td { word-wrap: break-word; overflow-wrap: break-word; }
+  table { table-layout: fixed; width: 100%; font-size: 9pt; }
+  th, td { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; padding: 4px; }
   body {
     background: #ffffff !important;
     color: #000000 !important;
