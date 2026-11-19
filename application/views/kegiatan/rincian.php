@@ -758,6 +758,13 @@ $(function(){
     }
 
     $('#boxPosAnggaran').show();
+    if (tipe !== 'DPRD') {
+      defaultPosId = '';
+      defaultPosNama = '';
+      $('#posAnggaranSelect').val('').trigger('change');
+      checkPengalihanPos();
+      return;
+    }
     App.ajax({
       url: window.APP.baseUrl + 'pos/pos_default?penerima_id=' + penerimaId + '&tahun_id=<?= (int)$kegiatan['tahun_anggaran_id'] ?>',
       method: 'GET'
