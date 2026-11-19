@@ -765,9 +765,10 @@ $(function(){
       if (res.data && res.data.pos) {
         defaultPosId = res.data.pos.id_raw || res.data.pos.id_enc;
         defaultPosNama = normalizePosName(res.data.pos.nama);
-        if (!$('#posAnggaranSelect').val() || $('#posAnggaranSelect').val() === defaultPosId) {
+        if (defaultPosId) {
           $('#posAnggaranSelect').val(defaultPosId).trigger('change');
         } else {
+          $('#posAnggaranSelect').val('').trigger('change');
           checkPengalihanPos();
         }
       } else {

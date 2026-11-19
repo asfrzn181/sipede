@@ -351,9 +351,7 @@ class Kegiatan extends MY_Controller
         if ($danaAwal < 0) {
             $this->respond(FALSE, 'Dana awal tidak boleh bernilai negatif.', array(), array('dana_awal' => 'Tidak boleh negatif.'), 422);
         }
-        if ($alasanPengalihan === '') {
-            $this->respond(FALSE, 'Keterangan anggaran wajib diisi untuk setiap peserta.', array(), array('alasan_pengalihan' => 'Wajib diisi.'), 422);
-        }
+        // Keterangan anggaran boleh kosong.
 
         $kegiatan = $this->Kegiatan_model->find($kegiatanId);
         if (!$kegiatan) {
