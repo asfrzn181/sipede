@@ -80,16 +80,16 @@ class Laporan extends MY_Controller
         $sheet->setCellValue('A1', 'REKAPITULASI REALISASI ANGGARAN SPPD DPRD');
         $sheet->setCellValue('A2', 'TAHUN ' . $tahunLabel);
         $headers = array('NO', 'NAMA', 'ANGGARAN', 'REALISASI', 'SISA', 'KETERANGAN');
-        foreach ($headers as $i => $header) $sheet->setCellValueByColumnAndRow($i + 1, 4, $header);
+        foreach ($headers as $i => $header) $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1) . 4, $header);
 
         $rowNum = 5;
         foreach ($rows as $idx => $row) {
-            $sheet->setCellValueByColumnAndRow(1, $rowNum, $idx + 1);
-            $sheet->setCellValueByColumnAndRow(2, $rowNum, $row['nama']);
-            $sheet->setCellValueByColumnAndRow(3, $rowNum, (float)$row['pagu']);
-            $sheet->setCellValueByColumnAndRow(4, $rowNum, (float)$row['realisasi']);
-            $sheet->setCellValueByColumnAndRow(5, $rowNum, (float)$row['sisa']);
-            $sheet->setCellValueByColumnAndRow(6, $rowNum, $row['jabatan'] ?: '');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(1) . $rowNum, $idx + 1);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(2) . $rowNum, $row['nama']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(3) . $rowNum, (float)$row['pagu']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(4) . $rowNum, (float)$row['realisasi']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(5) . $rowNum, (float)$row['sisa']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(6) . $rowNum, $row['jabatan'] ?: '');
             $rowNum++;
         }
         $sheet->setCellValue('B' . $rowNum, 'JUMLAH');
@@ -178,57 +178,57 @@ class Laporan extends MY_Controller
         $lastColumnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastColumn);
         $sheet->mergeCells('A1:' . $lastColumnLetter . '1');
         $sheet->mergeCells('A2:' . $lastColumnLetter . '2');
-        $sheet->setCellValueByColumnAndRow(1, 1, 'REKAPITULASI BELANJA PERJALANAN DINAS');
-        $sheet->setCellValueByColumnAndRow(1, 2, 'PIMPINAN DAN ANGGOTA DPRD TAHUN ' . $tahunLabel);
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(1) . 1, 'REKAPITULASI BELANJA PERJALANAN DINAS');
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(1) . 2, 'PIMPINAN DAN ANGGOTA DPRD TAHUN ' . $tahunLabel);
         $sheet->setCellValue('A4', 'ANGGARAN');
         $summaryRow = 4;
         foreach ($detail['pagu_breakdown'] as $pagu) {
             $summaryRow++;
-            $sheet->setCellValueByColumnAndRow(5, $summaryRow, $pagu['nama']);
-            $sheet->setCellValueByColumnAndRow($lastColumn, $summaryRow, (float)$pagu['pagu']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(5) . $summaryRow, $pagu['nama']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastColumn) . $summaryRow, (float)$pagu['pagu']);
         }
         $summaryRow++;
-        $sheet->setCellValueByColumnAndRow(5, $summaryRow, 'TOTAL');
-        $sheet->setCellValueByColumnAndRow($lastColumn, $summaryRow, (float)$detail['total_pagu']);
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(5) . $summaryRow, 'TOTAL');
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastColumn) . $summaryRow, (float)$detail['total_pagu']);
         $sheet->setCellValue('A6', 'NAMA : ' . ($detail['person']['nama'] ?? '-'));
 
         $headerRow = 8;
         $headers = array('NO', 'KETERANGAN', 'TUJUAN', 'TANGGAL PELAKSANAAN');
-        foreach ($headers as $i => $header) $sheet->setCellValueByColumnAndRow($i + 1, $headerRow, $header);
+        foreach ($headers as $i => $header) $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1) . $headerRow, $header);
         $componentStart = 5;
         foreach ($components as $i => $component) {
-            $sheet->setCellValueByColumnAndRow($componentStart + $i, $headerRow, $component['nama']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($componentStart + $i) . $headerRow, $component['nama']);
         }
         $totalCol = $componentStart + count($components);
         $sisaCol = $totalCol + 1;
         $sourceCol = $totalCol + 2;
         $ketCol = $totalCol + 3;
-        $sheet->setCellValueByColumnAndRow($totalCol, $headerRow, 'TOTAL');
-        $sheet->setCellValueByColumnAndRow($sisaCol, $headerRow, 'SISA ANGGARAN');
-        $sheet->setCellValueByColumnAndRow($sourceCol, $headerRow, 'SUMBER DANA');
-        $sheet->setCellValueByColumnAndRow($ketCol, $headerRow, 'KETERANGAN');
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalCol) . $headerRow, 'TOTAL');
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($sisaCol) . $headerRow, 'SISA ANGGARAN');
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($sourceCol) . $headerRow, 'SUMBER DANA');
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ketCol) . $headerRow, 'KETERANGAN');
 
         $rowNum = $headerRow + 1;
         foreach ($detail['rows'] as $idx => $row) {
-            $sheet->setCellValueByColumnAndRow(1, $rowNum, $idx + 1);
-            $sheet->setCellValueByColumnAndRow(2, $rowNum, $row['tema'] ?: $row['nama_kegiatan']);
-            $sheet->setCellValueByColumnAndRow(3, $rowNum, $row['tempat'] ?: '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(1) . $rowNum, $idx + 1);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(2) . $rowNum, $row['tema'] ?: $row['nama_kegiatan']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(3) . $rowNum, $row['tempat'] ?: '-');
             $tanggal = $row['tanggal_mulai'];
             if (!empty($row['tanggal_selesai']) && $row['tanggal_selesai'] !== $row['tanggal_mulai']) $tanggal .= ' s/d ' . $row['tanggal_selesai'];
-            $sheet->setCellValueByColumnAndRow(4, $rowNum, $tanggal);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(4) . $rowNum, $tanggal);
             foreach ($components as $i => $component) {
-                $sheet->setCellValueByColumnAndRow($componentStart + $i, $rowNum, (float)($row['komponen'][(int)$component['id']] ?? 0));
+                $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($componentStart + $i) . $rowNum, (float)($row['komponen'][(int)$component['id']] ?? 0));
             }
-            $sheet->setCellValueByColumnAndRow($totalCol, $rowNum, (float)$row['total']);
-            $sheet->setCellValueByColumnAndRow($sisaCol, $rowNum, (float)$row['sisa']);
-            $sheet->setCellValueByColumnAndRow($sourceCol, $rowNum, $row['sumber_dana'] ?: '-');
-            $sheet->setCellValueByColumnAndRow($ketCol, $rowNum, $row['keterangan'] ?: '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalCol) . $rowNum, (float)$row['total']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($sisaCol) . $rowNum, (float)$row['sisa']);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($sourceCol) . $rowNum, $row['sumber_dana'] ?: '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ketCol) . $rowNum, $row['keterangan'] ?: '-');
             $rowNum++;
         }
-        $sheet->setCellValueByColumnAndRow(2, $rowNum, 'JUMLAH');
-        foreach ($components as $i => $component) $sheet->setCellValueByColumnAndRow($componentStart + $i, $rowNum, (float)$component['total']);
-        $sheet->setCellValueByColumnAndRow($totalCol, $rowNum, (float)$detail['total_realisasi']);
-        $sheet->setCellValueByColumnAndRow($sisaCol, $rowNum, (float)$detail['sisa']);
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(2) . $rowNum, 'JUMLAH');
+        foreach ($components as $i => $component) $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($componentStart + $i) . $rowNum, (float)$component['total']);
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalCol) . $rowNum, (float)$detail['total_realisasi']);
+        $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($sisaCol) . $rowNum, (float)$detail['sisa']);
 
         $lastColumnLetter = Coordinate::stringFromColumnIndex($ketCol);
         $sheet->getStyle('A1:' . $lastColumnLetter . $rowNum)->getAlignment()->setVertical('top');
@@ -374,25 +374,25 @@ class Laporan extends MY_Controller
         $headers = array('No. Surat Tugas', 'Tanggal Mulai', 'Tanggal Selesai', 'Tema / Kegiatan', 'Tempat', 'Penerima', 'Tipe', 'Jabatan', 'Sumber Dana', 'Jenis Biaya', 'Volume', 'Tarif', 'Subtotal', 'Status');
         
         foreach ($headers as $colIdx => $header) {
-            $sheet->setCellValueByColumnAndRow($colIdx + 1, 1, $header);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx + 1) . 1, $header);
         }
 
         foreach ($rows as $r => $row) {
             $rowNum = $r + 2;
-            $sheet->setCellValueByColumnAndRow(1, $rowNum, $row['no_surat_tugas'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(2, $rowNum, $row['tanggal_mulai'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(3, $rowNum, $row['tanggal_selesai'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(4, $rowNum, $row['tema'] ?? $row['nama_kegiatan'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(5, $rowNum, $row['tempat'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(6, $rowNum, $row['penerima_nama'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(7, $rowNum, $row['tipe'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(8, $rowNum, $row['jabatan'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(9, $rowNum, $row['sumber_dana_nama'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(10, $rowNum, $row['jenis_biaya_nama'] ?? '-');
-            $sheet->setCellValueByColumnAndRow(11, $rowNum, (float)($row['volume'] ?? 0));
-            $sheet->setCellValueByColumnAndRow(12, $rowNum, (float)($row['tarif'] ?? 0));
-            $sheet->setCellValueByColumnAndRow(13, $rowNum, (float)($row['subtotal'] ?? 0));
-            $sheet->setCellValueByColumnAndRow(14, $rowNum, $row['status'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(1) . $rowNum, $row['no_surat_tugas'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(2) . $rowNum, $row['tanggal_mulai'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(3) . $rowNum, $row['tanggal_selesai'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(4) . $rowNum, $row['tema'] ?? $row['nama_kegiatan'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(5) . $rowNum, $row['tempat'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(6) . $rowNum, $row['penerima_nama'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(7) . $rowNum, $row['tipe'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(8) . $rowNum, $row['jabatan'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(9) . $rowNum, $row['sumber_dana_nama'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(10) . $rowNum, $row['jenis_biaya_nama'] ?? '-');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(11) . $rowNum, (float)($row['volume'] ?? 0));
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(12) . $rowNum, (float)($row['tarif'] ?? 0));
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(13) . $rowNum, (float)($row['subtotal'] ?? 0));
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(14) . $rowNum, $row['status'] ?? '-');
         }
 
         $writer = new Xlsx($sheet->getParent());
