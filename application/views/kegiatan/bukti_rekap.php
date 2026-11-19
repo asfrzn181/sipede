@@ -11,7 +11,8 @@
     <span class="fs-6 text-muted">|</span>
     <span class="fw-semibold text-dark">Bukti Rekapitulasi Perjalanan Dinas</span>
   </div>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 align-items-center">
+    <input type="text" class="form-control form-control-sm" id="inpVerifikatorNama" value="<?= html_escape($setting['verifikator_nama'] ?? '') ?>" placeholder="Nama Verifikator (boleh kosong)" style="width: 260px;">
     <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm" onclick="window.print()">
       <i class="bi bi-printer-fill"></i>
       <span>Cetak / Simpan PDF</span>
@@ -142,11 +143,8 @@
       <span class="fst-italic text-dark fw-semibold ms-1">"<?= html_escape($terbilang) ?>"</span>
     </div>
 
-    <!-- Input Verifikator (tidak ikut cetak) -->
-    <div class="d-print-none mb-3">
-      <label class="form-label small fw-semibold">Nama Verifikator (boleh dikosongkan)</label>
-      <input type="text" class="form-control form-control-sm" id="inpVerifikatorNama" value="<?= html_escape($setting['verifikator_nama'] ?? '') ?>" placeholder="Kosongkan jika tidak ingin menampilkan">
-    </div>
+    <!-- Input Verifikator (tidak ikut cetak) dipindah ke action bar -->
+
 
     <!-- Kolom Tanda Tangan Pengesahan Dinamis -->
     <?php $this->load->view('layout/tanda_tangan', array(

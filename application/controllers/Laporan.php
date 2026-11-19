@@ -169,8 +169,8 @@ class Laporan extends MY_Controller
     public function perorang_excel(): void
     {
         $this->require_permission('laporan.export');
-        list(, $tahunId, $tahunLabel, , , $penerimaId, $posId, $detail) = $this->perorang_context();
-        if (empty($detail['person'])) show_error('Anggota DPRD tidak ditemukan.', 404);
+        list(, $tahunId, $tahunLabel, , , , $penerimaId, $posId, $pendampingId, $detail) = $this->perorang_context();
+        if (empty($detail) || empty($detail['person'])) show_error('Data tidak ditemukan.', 404);
 
         $components = $detail['components'];
         $lastColumn = 8 + count($components);
