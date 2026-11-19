@@ -9,8 +9,13 @@ $rows = $detail['rows'] ?? array();
     <h1 class="h5 fw-bold text-dark mb-1">Laporan Per Orang</h1>
     <p class="text-muted small mb-0">Rekap belanja perjalanan dinas per anggota, komponen biaya, total, dan sisa anggaran.</p>
   </div>
+  <?php
+    if (!empty($posId)) $exportTarget = 'pos_' . (int)$posId;
+    elseif (!empty($pendampingId)) $exportTarget = 'pend_' . (int)$pendampingId;
+    else $exportTarget = (int)$penerimaId;
+  ?>
   <?php if(!empty($can_export) && !empty($person)): ?>
-    <a class="btn btn-outline-success btn-sm" href="<?= site_url('laporan/perorang_excel?tahun_anggaran_id=' . (int)$tahunId . '&penerima_id=' . (int)$penerimaId) ?>">
+    <a class="btn btn-outline-success btn-sm" href="<?= site_url('laporan/perorang_excel?tahun_anggaran_id=' . (int)$tahunId . '&penerima_id=' . urlencode($exportTarget)) ?>">
       <i class="bi bi-file-earmark-excel me-1"></i>Excel
     </a>
   <?php endif; ?>
