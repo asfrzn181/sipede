@@ -388,7 +388,7 @@ class Pos extends MY_Controller
         $saldo = $pos ? $this->Pos_model->saldo_pos((int)$pos['id']) : null;
 
         $this->respond(true, 'OK', [
-            'pos'   => $pos   ? array_merge($pos,   ['id_enc' => encrypt_id($pos['id'])]) : null,
+            'pos'   => $pos   ? array_merge($pos,   ['id_enc' => encrypt_id($pos['id']), 'id_raw' => (int)$pos['id']]) : null,
             'saldo' => $saldo ?: ['pagu' => 0, 'realisasi' => 0, 'sisa' => 0],
         ]);
     }

@@ -763,7 +763,7 @@ $(function(){
       method: 'GET'
     }).done(function(res){
       if (res.data && res.data.pos) {
-        defaultPosId = res.data.pos.id_enc;
+        defaultPosId = res.data.pos.id_raw || res.data.pos.id_enc;
         defaultPosNama = normalizePosName(res.data.pos.nama);
         if (!$('#posAnggaranSelect').val() || $('#posAnggaranSelect').val() === defaultPosId) {
           $('#posAnggaranSelect').val(defaultPosId).trigger('change');
