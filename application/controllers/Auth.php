@@ -7,7 +7,9 @@ class Auth extends MY_Controller
     public function index(): void
     {
         if ($this->user) {
-            $dest = $this->rbac->can_any(array('dashboard.view_all', 'dashboard.view_own')) ? 'dashboard' : 'laporan';
+            if ($this->rbac->can_any(array('dashboard.view_all', 'dashboard.view_own'))) $dest = 'dashboard';
+            elseif ($this->rbac->can_any(array('kegiatan.view_all', 'kegiatan.view_own'))) $dest = 'kegiatan';
+            else $dest = 'laporan';
             redirect($dest, 'location', 302);
         }
         $this->load->view('layout/auth');
@@ -36,7 +38,13 @@ class Auth extends MY_Controller
         $update=array('login_failures'=>0,'locked_until'=>NULL);if($this->User_model->has_column('terakhir_login'))$update['terakhir_login']=date('Y-m-d H:i:s');$this->db->where('id',$user['id'])->update('users',$update);
         unset($user['password']);$this->session->set_userdata('user',$user);$this->rbac->reload();
         $year=$this->db->order_by('tahun','DESC')->get_where('tahun_anggaran',array('is_locked'=>0))->row_array();if($year)$this->session->set_userdata('tahun_aktif_id',$year['id']);
-        $target = $this->rbac->can_any(array('dashboard.view_all', 'dashboard.view_own')) ? 'dashboard' : 'laporan';
+        if ($this->rbac->can_any(array('dashboard.view_all', 'dashboard.view_own'))) {
+            $target = 'dashboard';
+        } elseif ($this->rbac->can_any(array('kegiatan.view_all', 'kegiatan.view_own'))) {
+            $target = 'kegiatan';
+        } else {
+            $target = 'laporan';
+        }
         if (!empty($user['wajib_ganti_password'])) {
             $this->session->set_flashdata('info', 'Anda menggunakan password default. Anda dapat menggantinya melalui menu Profil.');
         }

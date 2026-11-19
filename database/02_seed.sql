@@ -135,10 +135,9 @@ SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.kode IN (
   'laporan.view_all', 'laporan.export'
 ) WHERE r.kode = 'PIMPINAN';
 
--- PENDAMPING: Self-service
+-- PENDAMPING: Self-service (tanpa dashboard)
 INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.kode IN (
-  'dashboard.view_own',
   'anggaran.view_own',
   'kegiatan.view_own', 'kegiatan.create', 'kegiatan.update', 'kegiatan.ajukan',
   'laporan.view_own', 'laporan.export'
