@@ -79,7 +79,6 @@
             <th>Nama</th>
             <th>Jabatan</th>
             <th>Beban Pos Anggaran</th>
-            <th style="width: 125px;" class="text-end">Dana Awal</th>
             <th style="width: 125px;" class="text-end">Realisasi</th>
             <th>Rincian Biaya</th>
           </tr>
@@ -105,9 +104,6 @@
                   </div>
                 <?php endif; ?>
               </td>
-              <td class="text-end fw-bold text-primary">
-                <?= rupiah($p['dana_awal'] ?? 0) ?>
-              </td>
               <td class="text-end fw-bold text-success">
                 <?= rupiah($p['realisasi_nota'] ?? $p['total_biaya']) ?>
               </td>
@@ -132,10 +128,9 @@
         </tbody>
         <tfoot style="border-top: 2px solid #000;">
           <tr class="fw-bold table-light">
-            <td colspan="7" class="text-end text-uppercase">Total Dana Awal:</td>
-            <td class="text-end fs-6 text-primary"><?= rupiah($kegiatan['total_dana_awal'] ?? 0) ?></td>
+            <td colspan="4" class="text-end text-uppercase">TOTAL</td>
             <td class="text-end fs-6 text-success"><?= rupiah($kegiatan['grand_total']) ?></td>
-            <td class="text-end fs-6 text-dark"><?= rupiah(($kegiatan['total_dana_awal'] ?? 0) - $kegiatan['grand_total']) ?></td>
+            <td></td>
           </tr>
         </tfoot>
       </table>
