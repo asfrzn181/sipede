@@ -53,7 +53,7 @@
           <td class="fw-semibold text-muted">Waktu Pelaksanaan</td>
           <td>:</td>
           <td>
-            <?= tgl_indo($kegiatan['tanggal_mulai']) ?> s/d <?= tgl_indo($kegiatan['tanggal_selesai']) ?> 
+            <?= tgl_indo_panjang($kegiatan['tanggal_mulai']) ?> s/d <?= tgl_indo_panjang($kegiatan['tanggal_selesai']) ?>
             <span class="text-muted">(<?= (int)$durasiHari ?> Hari)</span>
           </td>
         </tr>
@@ -165,10 +165,10 @@
 }
 
 @media print {
-  @page { size: 215mm 330mm; margin: 15mm; }
+  @page { size: 215mm 330mm; margin: 10mm 8mm; }
   table { table-layout: fixed; width: 100%; font-size: 9pt; }
   th, td { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; padding: 4px; }
-  body {
+  body { line-height: 1; }
     background: #ffffff !important;
     color: #000000 !important;
     font-size: 12pt;
