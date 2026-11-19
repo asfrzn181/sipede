@@ -150,12 +150,13 @@ class Laporan_model extends CI_Model
             ->select('k.id AS kegiatan_id, k.nama_kegiatan, k.no_surat_tugas, k.tanggal_mulai, k.tanggal_selesai,
                       k.tema, k.tempat, k.status, kb.jenis_biaya_id, jb.kode AS jenis_biaya_kode,
                       jb.nama AS jenis_biaya_nama, kb.keterangan, kb.volume, kb.tarif,
-                      p.nama AS penerima_nama,
+                      COALESCE(p.nama, pd.nama) AS penerima_nama,
                       COALESCE(sd.nama, ja.nama, "-") AS sumber_dana_nama,
                       (kb.volume * kb.tarif) AS subtotal', FALSE)
             ->from('kegiatan k')
             ->join('kegiatan_peserta kp', 'kp.kegiatan_id = k.id')
             ->join('penerima p', 'p.id = kp.penerima_id', 'left')
+            ->join('pendamping pd', 'pd.id = kp.pendamping_id', 'left')
             ->join('kegiatan_biaya kb', 'kb.kegiatan_peserta_id = kp.id')
             ->join('jenis_biaya jb', 'jb.id = kb.jenis_biaya_id')
             ->join('sumber_dana sd', 'sd.id = kp.sumber_dana_id', 'left')
